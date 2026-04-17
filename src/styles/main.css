@@ -374,3 +374,34 @@ input {
     padding: 24px;
   }
 }
+
+/* Estilos específicos para la página de biblioteca */
+
+.bibliotecaPage {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+
+/* Estilos específicos para la página de lectura */
+
+
+.lecturaPage {
+  display: flex;
+  justify-content: center;
+}
+
+.readingContainer {
+  max-width: 700px;
+  background: white;
+  padding: 40px;
+  border-radius: 14px;
+  line-height: 1.8;
+  font-size: 18px;
+}
+
+.readingText {
+  margin-top: 20px;
+  color: #374151;
+}

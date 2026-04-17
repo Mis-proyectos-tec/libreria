@@ -386,7 +386,6 @@ input {
 
 /* Estilos específicos para la página de lectura */
 
-
 .lecturaPage {
   display: flex;
   justify-content: center;
@@ -395,7 +394,7 @@ input {
 
 .readingWrapper {
   width: 100%;
-  max-width: 950px;
+  max-width: 1100px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -408,8 +407,29 @@ input {
   padding: 24px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 20px;
+}
+
+.readingHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.backButton {
+  width: fit-content;
+  border: none;
+  background: #eef2ff;
+  color: var(--primary);
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.backButton:hover {
+  background: #e0e7ff;
 }
 
 .readingLabel {
@@ -430,6 +450,7 @@ input {
 
 .readingTools {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -476,18 +497,44 @@ input {
 }
 
 .readingContainer {
-  background: white;
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 42px;
   line-height: 1.9;
   min-height: 420px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+  transition: 0.2s ease;
+}
+
+.readingNormal {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.readingWide {
+  max-width: 980px;
+  margin: 0 auto;
 }
 
 .readingText {
-  color: #374151;
   white-space: pre-line;
+}
+
+.readingContainer:not(.readingDark) {
+  background: white;
+}
+
+.readingContainer:not(.readingDark) .readingText {
+  color: #374151;
+}
+
+.readingDark {
+  background: #111827;
+  border-color: #1f2937;
+}
+
+.readingDark .readingText {
+  color: #f3f4f6;
 }
 
 .readingFooter {

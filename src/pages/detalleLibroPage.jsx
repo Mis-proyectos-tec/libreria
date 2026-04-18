@@ -35,26 +35,35 @@ export default function DetalleLibroPage() {
           <div className="detalleMeta">
             <div className="metaItem">
               <strong>Idioma</strong>
-              <span>{book.language}</span>
+              <span>{book.language || "N/A"}</span>
             </div>
+
             <div className="metaItem">
               <strong>Páginas</strong>
-              <span>{book.totalPages}</span>
+              <span>{book.totalPages || "N/A"}</span>
             </div>
+
             <div className="metaItem">
               <strong>Estado</strong>
-              <span>{book.currentStatus}</span>
+              <span>{book.currentStatus || "activo"}</span>
             </div>
           </div>
 
           <div className="detalleActions">
+            <button
+              className="secondaryButton"
+              onClick={() => navigate("/biblioteca")}
+            >
+              Volver a biblioteca
+            </button>
+
             <button
               className="primaryButton"
               onClick={() =>
                 navigate("/lectura", { state: { libroId: book.id } })
               }
             >
-              Leer ahora
+              Seguir leyendo
             </button>
           </div>
         </div>

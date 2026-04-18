@@ -10,9 +10,13 @@ export default function Navbar() {
     navigate("/login");
   }
 
+  function goHome() {
+    navigate("/");
+  }
+
   return (
     <header className="navbar">
-      <div>
+      <div onClick={goHome} style={{ cursor: "pointer" }}>
         <h1 className="navbarTitle">ReadFlow</h1>
         <p className="navbarSubtitle">
           {isAuthenticated
@@ -30,9 +34,34 @@ export default function Navbar() {
 
         {isAuthenticated ? (
           <>
-            <button className="themeButton" onClick={() => navigate("/perfil")}>
+            <button
+              className="secondaryButton"
+              onClick={() => navigate("/")}
+            >
+              Inicio
+            </button>
+
+            <button
+              className="secondaryButton"
+              onClick={() => navigate("/biblioteca")}
+            >
+              Biblioteca
+            </button>
+
+            <button
+              className="secondaryButton"
+              onClick={() => navigate("/mi-biblioteca")}
+            >
+              Favoritos
+            </button>
+
+            <button
+              className="themeButton"
+              onClick={() => navigate("/perfil")}
+            >
               👤
             </button>
+
             <button className="secondaryButton" onClick={handleLogout}>
               Salir
             </button>

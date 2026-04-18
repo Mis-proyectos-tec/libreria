@@ -7,29 +7,44 @@ import { useAppData } from "../context/appDataContext.jsx";
 export default function HomePage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, categories, readingProgress, loading, error } = useAppData();
+  const { books, favorites, readingProgress, loading, error } = useAppData();
 
-  const librosUsuario = useMemo(() => {
-    return books.filter((book) => book.userId === currentUser?.id);
+  const userBooks = useMemo(() => {
+    if (!currentUser) return [];
+    return books.filter((book) => book.userId === currentUser.id);
   }, [books, currentUser]);
 
-  const continuarLeyendo = useMemo(() => {
+  const continueReadingBooks = useMemo(() => {
+    if (!currentUser) return [];
+
     return readingProgress
-      .filter((item) => item.userId === currentUser?.id)
+      .filter((item) => item.userId === currentUser.id)
       .map((progressItem) => {
         const book = books.find((item) => item.id === progressItem.bookId);
         if (!book) return null;
 
         return {
           ...book,
-          progress: progressItem.percentage,
-          currentPage: progressItem.currentPage,
+          progress: progressItem.percentage || 0,
+          currentPage: progressItem.currentPage || 1,
         };
       })
       .filter(Boolean);
   }, [readingProgress, books, currentUser]);
 
-  const recomendados = librosUsuario.slice(0, 4);
+  const favoriteBooks = useMemo(() => {
+    if (!currentUser) return [];
+
+    const favoriteIds = favorites
+      .filter((fav) => fav.userId === currentUser.id)
+      .map((fav) => fav.bookId);
+
+    return books.filter((book) => favoriteIds.includes(book.id));
+  }, [books, favorites, currentUser]);
+
+  const recentBooks = useMemo(() => {
+    return userBooks.slice(0, 8);
+  }, [userBooks]);
 
   if (!currentUser) return <p>Debes iniciar sesión.</p>;
   if (loading) return <p>Cargando inicio...</p>;
@@ -41,10 +56,11 @@ export default function HomePage() {
         <div className="heroContent">
           <span className="heroBadge">Biblioteca digital</span>
           <h1 className="heroTitle">
-            Lee, organiza y continúa tus libros desde un solo lugar
+            Organiza tus libros y continúa leyendo fácilmente
           </h1>
           <p className="heroText">
-            Explora tu colección, retoma tus lecturas y administra tus libros de forma simple.
+            Administra tu biblioteca, consulta tus favoritos y retoma tus lecturas
+            desde un solo lugar.
           </p>
 
           <div className="heroButtons">
@@ -52,14 +68,14 @@ export default function HomePage() {
               className="primaryButton"
               onClick={() => navigate("/biblioteca")}
             >
-              Explorar biblioteca
+              Ver biblioteca
             </button>
 
             <button
               className="secondaryButton"
               onClick={() => navigate("/mi-biblioteca")}
             >
-              Mi biblioteca
+              Ver favoritos
             </button>
           </div>
         </div>
@@ -70,61 +86,85 @@ export default function HomePage() {
           <h2>Continuar leyendo</h2>
         </div>
 
-        <div className="booksGrid">
-          {continuarLeyendo.map((book) => (
-            <div
-              key={book.id}
-              onClick={() =>
-                navigate("/lectura", { state: { libroId: book.id } })
-              }
-            >
-              <BookCard
-                titulo={book.title}
-                autor={book.author}
-                portada={book.coverUrl || "/assets/defaultBook.png"}
-                progreso={book.progress}
-                mostrarProgreso={true}
-              />
-            </div>
-          ))}
-        </div>
+        {continueReadingBooks.length === 0 ? (
+          <p>No tienes lecturas en progreso.</p>
+        ) : (
+          <div className="booksGrid">
+            {continueReadingBooks.map((book) => (
+              <div
+                key={book.id}
+                onClick={() =>
+                  navigate("/detalle-libro", { state: { libroId: book.id } })
+                }
+                style={{ cursor: "pointer" }}
+              >
+                <BookCard
+                  titulo={book.title}
+                  autor={book.author}
+                  portada={book.coverUrl || "/assets/defaultBook.png"}
+                  progreso={book.progress}
+                  mostrarProgreso={true}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="sectionBlock">
         <div className="sectionHeader">
-          <h2>Categorías</h2>
+          <h2>Biblioteca</h2>
         </div>
 
-        <div className="categoryContainer">
-          {categories.map((category) => (
-            <button key={category.id} className="categoryChip">
-              {category.label}
-            </button>
-          ))}
-        </div>
+        {recentBooks.length === 0 ? (
+          <p>No tienes libros en tu biblioteca.</p>
+        ) : (
+          <div className="booksGrid">
+            {recentBooks.map((book) => (
+              <div
+                key={book.id}
+                onClick={() =>
+                  navigate("/detalle-libro", { state: { libroId: book.id } })
+                }
+                style={{ cursor: "pointer" }}
+              >
+                <BookCard
+                  titulo={book.title}
+                  autor={book.author}
+                  portada={book.coverUrl || "/assets/defaultBook.png"}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="sectionBlock">
         <div className="sectionHeader">
-          <h2>Tus libros</h2>
+          <h2>Favoritos</h2>
         </div>
 
-        <div className="booksGrid">
-          {recomendados.map((book) => (
-            <div
-              key={book.id}
-              onClick={() =>
-                navigate("/detalle-libro", { state: { libroId: book.id } })
-              }
-            >
-              <BookCard
-                titulo={book.title}
-                autor={book.author}
-                portada={book.coverUrl || "/assets/defaultBook.png"}
-              />
-            </div>
-          ))}
-        </div>
+        {favoriteBooks.length === 0 ? (
+          <p>No tienes libros en favoritos.</p>
+        ) : (
+          <div className="booksGrid">
+            {favoriteBooks.map((book) => (
+              <div
+                key={book.id}
+                onClick={() =>
+                  navigate("/detalle-libro", { state: { libroId: book.id } })
+                }
+                style={{ cursor: "pointer" }}
+              >
+                <BookCard
+                  titulo={book.title}
+                  autor={book.author}
+                  portada={book.coverUrl || "/assets/defaultBook.png"}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </section>
   );

@@ -394,10 +394,24 @@ input {
 
 .readingWrapper {
   width: 100%;
-  max-width: 1100px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.readingPdfContainer {
+  width: 100%;
+  height: 85vh;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.readingPdfContainer iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 
 .readingHeader {

@@ -3,76 +3,76 @@ const API_BASE_URL = "https://librosapi.azure-api.net/v1/books";
 
 const jsonHeaders = {
   "Content-Type": "application/json",
-  "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
+  "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY
 };
 
 const authHeaders = {
-  "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
+  "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY
 };
-
-async function handleResponse(response) {
-  const text = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`Error HTTP: ${response.status} - ${text}`);
-  }
-
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
 
 export async function getUsers() {
   const response = await fetch(API_BASE_URL, {
     method: "GET",
-    headers: authHeaders,
+    headers: authHeaders
   });
 
-  const data = await handleResponse(response);
-  console.log("getUsers response:", data);
-  return data;
+  if (!response.ok) {
+    throw new Error(`Error HTTP: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export async function getUserById(id) {
   const response = await fetch(`${API_BASE_URL}/${id}`, {
     method: "GET",
-    headers: authHeaders,
+    headers: authHeaders
   });
 
-  const data = await handleResponse(response);
-  console.log("getUserById response:", data);
-  return data;
+  if (!response.ok) {
+    throw new Error(`Error HTTP: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export async function createUser(user) {
   const response = await fetch(API_BASE_URL, {
     method: "POST",
     headers: jsonHeaders,
-    body: JSON.stringify(user),
+    body: JSON.stringify(user)
   });
 
-  return handleResponse(response);
+  if (!response.ok) {
+    throw new Error(`Error HTTP: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export async function updateUser(id, user) {
   const response = await fetch(`${API_BASE_URL}/${id}`, {
     method: "PUT",
     headers: jsonHeaders,
-    body: JSON.stringify(user),
+    body: JSON.stringify(user)
   });
 
-  return handleResponse(response);
+  if (!response.ok) {
+    throw new Error(`Error HTTP: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export async function deleteUser(id) {
   const response = await fetch(`${API_BASE_URL}/${id}`, {
     method: "DELETE",
-    headers: authHeaders,
+    headers: authHeaders
   });
 
-  return handleResponse(response);
+  if (!response.ok) {
+    throw new Error(`Error HTTP: ${response.status}`);
+  }
+
+  return response.json();
 }

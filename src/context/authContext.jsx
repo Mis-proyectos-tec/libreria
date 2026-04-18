@@ -1,34 +1,22 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getUsers } from "../services/booksService.js";
+import { getUserById } from "../services/usersService.js";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("currentUser");
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem("currentUser");
+    return saved ? JSON.parse(saved) : null;
+  });
 
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-  }, []);
+  const [loadingUser, setLoadingUser] = useState(false);
 
-  async function login(email, password) {
-    const users = await getUsers();
+  const isAuthenticated = !!currentUser;
 
-    const user = users.find(
-      (item) => item.email === email && item.password === password
-    );
-
-    if (!user) {
-      throw new Error("Correo o contraseña incorrectos");
-    }
-
+  function login(user) {
     setCurrentUser(user);
     localStorage.setItem("currentUser", JSON.stringify(user));
-
-    return user;
   }
 
   function logout() {
@@ -36,13 +24,76 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("currentUser");
   }
 
+  async function refreshCurrentUser() {
+    if (!currentUser?.id) return;
+
+    try {
+      setLoadingUser(true);
+
+      const updatedUser = await getUserById(currentUser.id);
+
+      setCurrentUser(updatedUser);
+
+      localStorage.setItem(
+        "currentUser",
+        JSON.stringify(updatedUser)
+      );
+
+    } catch (error) {
+      console.error("Error refrescando usuario:", error);
+    } finally {
+      setLoadingUser(false);
+    }
+  }
+
+  useEffect(() => {
+
+    async function syncUser() {
+
+      const saved = localStorage.getItem("currentUser");
+
+      if (!saved) return;
+
+      const parsed = JSON.parse(saved);
+
+      if (!parsed?.id) return;
+
+      try {
+
+        const freshUser = await getUserById(parsed.id);
+
+        setCurrentUser(freshUser);
+
+        localStorage.setItem(
+          "currentUser",
+          JSON.stringify(freshUser)
+        );
+
+      } catch (error) {
+
+        console.warn("No se pudo sincronizar usuario con API");
+
+      }
+
+    }
+
+    syncUser();
+
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
         currentUser,
+        setCurrentUser,
+
+        isAuthenticated,
+        loadingUser,
+
         login,
         logout,
-        isAuthenticated: Boolean(currentUser),
+
+        refreshCurrentUser
       }}
     >
       {children}

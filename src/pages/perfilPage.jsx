@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/authContext.jsx";
+import { updateUser } from "../services/usersService.js";
 
 export default function PerfilPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, refreshCurrentUser } = useAuth();
+
   const [isEditing, setIsEditing] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
@@ -12,15 +14,12 @@ export default function PerfilPage() {
   });
 
   useEffect(() => {
-    if (!currentUser) return;
-
-    const savedProfile = localStorage.getItem(`perfil-${currentUser.id}`);
-    const parsed = savedProfile ? JSON.parse(savedProfile) : null;
-
-    setFormData({
-      name: parsed?.name || currentUser.name || "",
-      email: parsed?.email || currentUser.email || "",
-    });
+    if (currentUser) {
+      setFormData({
+        name: currentUser.name || "",
+        email: currentUser.email || "",
+      });
+    }
   }, [currentUser]);
 
   if (!currentUser) return <p>No hay usuario autenticado.</p>;
@@ -36,31 +35,36 @@ export default function PerfilPage() {
 
   function handleChange(event) {
     const { name, value } = event.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   }
 
-  function handleSave() {
-    localStorage.setItem(
-      `perfil-${currentUser.id}`,
-      JSON.stringify(formData)
-    );
-    setSaveMessage("Perfil actualizado correctamente.");
-    setIsEditing(false);
+  async function handleSaveProfile() {
+    try {
+      const payload = {
+        ...currentUser,
+        name: formData.name,
+        email: formData.email,
+      };
+
+      await updateUser(currentUser.id, payload);
+      await refreshCurrentUser();
+
+      setSaveMessage("Perfil actualizado correctamente.");
+      setIsEditing(false);
+    } catch (error) {
+      console.error(error);
+      setSaveMessage("No se pudo actualizar el perfil.");
+    }
   }
 
   function handleCancel() {
-    const savedProfile = localStorage.getItem(`perfil-${currentUser.id}`);
-    const parsed = savedProfile ? JSON.parse(savedProfile) : null;
-
     setFormData({
-      name: parsed?.name || currentUser.name || "",
-      email: parsed?.email || currentUser.email || "",
+      name: currentUser.name || "",
+      email: currentUser.email || "",
     });
-
     setSaveMessage("");
     setIsEditing(false);
   }
@@ -79,21 +83,14 @@ export default function PerfilPage() {
           </div>
 
           {!isEditing ? (
-            <button
-              className="primaryButton"
-              onClick={() => {
-                setIsEditing(true);
-                setSaveMessage("");
-              }}
-            >
+            <button className="primaryButton" onClick={() => setIsEditing(true)}>
               Editar perfil
             </button>
           ) : (
             <div className="perfilActions">
-              <button className="primaryButton" onClick={handleSave}>
+              <button className="primaryButton" onClick={handleSaveProfile}>
                 Guardar
               </button>
-
               <button className="secondaryButton" onClick={handleCancel}>
                 Cancelar
               </button>

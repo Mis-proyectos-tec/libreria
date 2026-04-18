@@ -2,12 +2,13 @@ import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppData } from "../context/appDataContext.jsx";
 import { useAuth } from "../context/authContext.jsx";
+import { updateBook } from "../services/booksService.js";
 
 export default function DetalleLibroPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
-  const { books, loading, error } = useAppData();
+  const { books, loading, error, reloadAppData } = useAppData();
 
   const libroId = location.state?.libroId;
 
@@ -25,6 +26,20 @@ export default function DetalleLibroPage() {
   }
 
   const [favoritos, setFavoritos] = useState(getFavorites());
+  const [isEditing, setIsEditing] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+
+  const [formData, setFormData] = useState({
+    title: book?.title || "",
+    author: book?.author || "",
+    category: book?.category || "",
+    description: book?.description || "",
+    language: book?.language || "",
+    totalPages: book?.totalPages || "",
+    currentStatus: book?.currentStatus || "",
+    coverUrl: book?.coverUrl || "",
+    pdfUrl: book?.pdfUrl || "",
+  });
 
   const esFavorito = book ? favoritos.includes(book.id) : false;
 
@@ -43,6 +58,56 @@ export default function DetalleLibroPage() {
     localStorage.setItem(getFavoriteKey(), JSON.stringify(nuevosFavoritos));
   }
 
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+  async function handleSaveBook() {
+    if (!book) return;
+
+    try {
+      const payload = {
+        ...book,
+        ...formData,
+        totalPages: Number(formData.totalPages) || 0,
+      };
+
+      await updateBook(book.id, payload);
+
+      setSaveMessage("Libro actualizado correctamente.");
+      setIsEditing(false);
+
+      if (reloadAppData) {
+        await reloadAppData();
+      }
+    } catch (err) {
+      console.error(err);
+      setSaveMessage("No se pudo actualizar el libro en el API.");
+    }
+  }
+
+  function handleCancelEdit() {
+    setFormData({
+      title: book?.title || "",
+      author: book?.author || "",
+      category: book?.category || "",
+      description: book?.description || "",
+      language: book?.language || "",
+      totalPages: book?.totalPages || "",
+      currentStatus: book?.currentStatus || "",
+      coverUrl: book?.coverUrl || "",
+      pdfUrl: book?.pdfUrl || "",
+    });
+
+    setIsEditing(false);
+    setSaveMessage("");
+  }
+
   if (loading) return <p>Cargando libro...</p>;
   if (error) return <p>{error}</p>;
   if (!libroId) return <p>No se recibió el libro seleccionado.</p>;
@@ -52,33 +117,132 @@ export default function DetalleLibroPage() {
     <section className="detalleLibroPage">
       <div className="detalleLibroCard">
         <img
-          src={book.coverUrl || "/assets/defaultBook.png"}
-          alt={book.title}
+          src={formData.coverUrl || "/assets/defaultBook.png"}
+          alt={formData.title}
           className="detalleLibroImage"
         />
 
         <div className="detalleLibroContent">
-          <span className="heroBadge">{book.category}</span>
-          <h1>{book.title}</h1>
-          <p className="detalleAutor">{book.author}</p>
-          <p className="detalleDescripcion">{book.description}</p>
+          <span className="heroBadge">{formData.category || "Sin categoría"}</span>
 
-          <div className="detalleMeta">
-            <div className="metaItem">
-              <strong>Idioma</strong>
-              <span>{book.language || "N/A"}</span>
-            </div>
+          {isEditing ? (
+            <div className="perfilGrid">
+              <div className="perfilField">
+                <label>Título</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                />
+              </div>
 
-            <div className="metaItem">
-              <strong>Páginas</strong>
-              <span>{book.totalPages || "N/A"}</span>
-            </div>
+              <div className="perfilField">
+                <label>Autor</label>
+                <input
+                  type="text"
+                  name="author"
+                  value={formData.author}
+                  onChange={handleChange}
+                />
+              </div>
 
-            <div className="metaItem">
-              <strong>Estado</strong>
-              <span>{book.currentStatus || "Activo"}</span>
+              <div className="perfilField">
+                <label>Categoría</label>
+                <input
+                  type="text"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="perfilField">
+                <label>Idioma</label>
+                <input
+                  type="text"
+                  name="language"
+                  value={formData.language}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="perfilField">
+                <label>Páginas</label>
+                <input
+                  type="number"
+                  name="totalPages"
+                  value={formData.totalPages}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="perfilField">
+                <label>Estado</label>
+                <input
+                  type="text"
+                  name="currentStatus"
+                  value={formData.currentStatus}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="perfilField">
+                <label>Portada URL</label>
+                <input
+                  type="text"
+                  name="coverUrl"
+                  value={formData.coverUrl}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="perfilField">
+                <label>PDF URL</label>
+                <input
+                  type="text"
+                  name="pdfUrl"
+                  value={formData.pdfUrl}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="perfilField" style={{ gridColumn: "1 / -1" }}>
+                <label>Descripción</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows="5"
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <h1>{book.title}</h1>
+              <p className="detalleAutor">{book.author}</p>
+              <p className="detalleDescripcion">{book.description}</p>
+
+              <div className="detalleMeta">
+                <div className="metaItem">
+                  <strong>Idioma</strong>
+                  <span>{book.language || "N/A"}</span>
+                </div>
+
+                <div className="metaItem">
+                  <strong>Páginas</strong>
+                  <span>{book.totalPages || "N/A"}</span>
+                </div>
+
+                <div className="metaItem">
+                  <strong>Estado</strong>
+                  <span>{book.currentStatus || "Activo"}</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {saveMessage && <p className="saveMessage">{saveMessage}</p>}
 
           <div className="detalleActions">
             <button
@@ -100,6 +264,28 @@ export default function DetalleLibroPage() {
             <button className="secondaryButton" onClick={toggleFavorito}>
               {esFavorito ? "★ Quitar favorito" : "☆ Agregar a favoritos"}
             </button>
+
+            {!isEditing ? (
+              <button
+                className="secondaryButton"
+                onClick={() => {
+                  setIsEditing(true);
+                  setSaveMessage("");
+                }}
+              >
+                Editar libro
+              </button>
+            ) : (
+              <>
+                <button className="primaryButton" onClick={handleSaveBook}>
+                  Guardar cambios
+                </button>
+
+                <button className="secondaryButton" onClick={handleCancelEdit}>
+                  Cancelar
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

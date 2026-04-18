@@ -1,14 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/authContext.jsx";
 
 export default function PerfilPage() {
   const { currentUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
 
   const [formData, setFormData] = useState({
-    name: currentUser?.name || "",
-    email: currentUser?.email || "",
+    name: "",
+    email: "",
   });
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const savedProfile = localStorage.getItem(`perfil-${currentUser.id}`);
+    const parsed = savedProfile ? JSON.parse(savedProfile) : null;
+
+    setFormData({
+      name: parsed?.name || currentUser.name || "",
+      email: parsed?.email || currentUser.email || "",
+    });
+  }, [currentUser]);
 
   if (!currentUser) return <p>No hay usuario autenticado.</p>;
 
@@ -23,6 +36,7 @@ export default function PerfilPage() {
 
   function handleChange(event) {
     const { name, value } = event.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -34,6 +48,7 @@ export default function PerfilPage() {
       `perfil-${currentUser.id}`,
       JSON.stringify(formData)
     );
+    setSaveMessage("Perfil actualizado correctamente.");
     setIsEditing(false);
   }
 
@@ -42,16 +57,19 @@ export default function PerfilPage() {
     const parsed = savedProfile ? JSON.parse(savedProfile) : null;
 
     setFormData({
-      name: parsed?.name || currentUser?.name || "",
-      email: parsed?.email || currentUser?.email || "",
+      name: parsed?.name || currentUser.name || "",
+      email: parsed?.email || currentUser.email || "",
     });
 
+    setSaveMessage("");
     setIsEditing(false);
   }
 
   return (
     <section className="perfilPage">
       <div className="perfilCard">
+        <div className="perfilBanner"></div>
+
         <div className="perfilHeader">
           <div className="perfilAvatar">{getInitials(formData.name)}</div>
 
@@ -61,7 +79,13 @@ export default function PerfilPage() {
           </div>
 
           {!isEditing ? (
-            <button className="primaryButton" onClick={() => setIsEditing(true)}>
+            <button
+              className="primaryButton"
+              onClick={() => {
+                setIsEditing(true);
+                setSaveMessage("");
+              }}
+            >
               Editar perfil
             </button>
           ) : (
@@ -69,12 +93,15 @@ export default function PerfilPage() {
               <button className="primaryButton" onClick={handleSave}>
                 Guardar
               </button>
+
               <button className="secondaryButton" onClick={handleCancel}>
                 Cancelar
               </button>
             </div>
           )}
         </div>
+
+        {saveMessage && <p className="saveMessage">{saveMessage}</p>}
 
         <div className="perfilGrid">
           <div className="perfilField">
@@ -92,7 +119,7 @@ export default function PerfilPage() {
           </div>
 
           <div className="perfilField">
-            <label>Correo</label>
+            <label>Correo electrónico</label>
             {isEditing ? (
               <input
                 type="email"

@@ -50,12 +50,12 @@ export async function createUser(user) {
   return response.json();
 }
 
-export async function updateUser(id, user) {
-  const response = await fetch(`${API_BASE_URL}/${id}`, {
+export function updateUser(id, user) {
+  return apiRequest(`/users/${id}`, {
     method: "PUT",
-    headers: jsonHeaders,
-    body: JSON.stringify(user)
+    body: JSON.stringify(user),
   });
+}
 
   if (!response.ok) {
     throw new Error(`Error HTTP: ${response.status}`);

@@ -14,12 +14,12 @@ export default function PerfilPage() {
   });
 
   useEffect(() => {
-    if (currentUser) {
-      setFormData({
-        name: currentUser.name || "",
-        email: currentUser.email || "",
-      });
-    }
+    if (!currentUser) return;
+
+    setFormData({
+      name: currentUser.name || "",
+      email: currentUser.email || "",
+    });
   }, [currentUser]);
 
   if (!currentUser) return <p>No hay usuario autenticado.</p>;
@@ -50,8 +50,8 @@ export default function PerfilPage() {
         email: formData.email,
       };
 
-      await updateUser(currentUser.id, payload);
-      updateCurrentUserLocally(payload);
+      const updated = await updateUser(currentUser.id, payload);
+      updateCurrentUserLocally(updated || payload);
 
       setSaveMessage("Perfil actualizado correctamente.");
       setIsEditing(false);
@@ -85,13 +85,7 @@ export default function PerfilPage() {
           </div>
 
           {!isEditing ? (
-            <button
-              className="primaryButton"
-              onClick={() => {
-                setIsEditing(true);
-                setSaveMessage("");
-              }}
-            >
+            <button className="primaryButton" onClick={() => setIsEditing(true)}>
               Editar perfil
             </button>
           ) : (
@@ -99,7 +93,6 @@ export default function PerfilPage() {
               <button className="primaryButton" onClick={handleSaveProfile}>
                 Guardar
               </button>
-
               <button className="secondaryButton" onClick={handleCancel}>
                 Cancelar
               </button>

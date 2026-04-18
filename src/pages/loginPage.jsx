@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext.jsx";
+import { getUsers } from "../services/usersService.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export default function LoginPage() {
     password: "",
   });
 
-  const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   function handleChange(event) {
@@ -25,15 +26,31 @@ export default function LoginPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    setErrorMessage("");
+    setLoading(true);
 
     try {
-      setLoading(true);
-      setError("");
+      const users = await getUsers();
 
-      await login(formData.email, formData.password);
-      navigate("/");
-    } catch (err) {
-      setError(err.message || "No se pudo iniciar sesión");
+      const usuarioEncontrado = users.find((user) => {
+        return (
+          String(user.email).trim().toLowerCase() ===
+            String(formData.email).trim().toLowerCase() &&
+          String(user.password).trim() === String(formData.password).trim()
+        );
+      });
+
+      if (!usuarioEncontrado) {
+        setErrorMessage("Correo o contraseña incorrectos.");
+        setLoading(false);
+        return;
+      }
+
+      login(usuarioEncontrado);
+      navigate("/home");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("No se pudo iniciar sesión.");
     } finally {
       setLoading(false);
     }
@@ -42,47 +59,35 @@ export default function LoginPage() {
   return (
     <section className="authPage">
       <div className="authCard">
-        <div className="authHeader">
-          <span className="heroBadge">ReadFlow</span>
-          <h1>Iniciar sesión</h1>
-          <p>Ingresa con tu correo y contraseña para acceder a tu biblioteca.</p>
-        </div>
+        <h1>Iniciar sesión</h1>
 
-        {error && <p className="authError">{error}</p>}
-
-        <form className="authForm" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <div className="formGroup">
-            <label htmlFor="email">Correo electrónico</label>
+            <label>Correo</label>
             <input
-              id="email"
-              name="email"
               type="email"
+              name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="correo@ejemplo.com"
-              required
+              placeholder="Ingresa tu correo"
             />
           </div>
 
           <div className="formGroup">
-            <label htmlFor="password">Contraseña</label>
+            <label>Contraseña</label>
             <input
-              id="password"
-              name="password"
               type="password"
+              name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="********"
-              required
+              placeholder="Ingresa tu contraseña"
             />
           </div>
 
-          <button
-            type="submit"
-            className="primaryButton authButton"
-            disabled={loading}
-          >
-            {loading ? "Ingresando..." : "Ingresar"}
+          {errorMessage && <p className="unsavedWarning">{errorMessage}</p>}
+
+          <button className="primaryButton" type="submit" disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
       </div>

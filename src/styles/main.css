@@ -641,3 +641,50 @@ button:disabled {
   display: flex;
   flex-direction: column;
 }
+
+
+
+body.darkMode {
+  --bg: #111827;
+  --surface: #1f2937;
+  --surface-soft: #374151;
+  --text: #f9fafb;
+  --text-soft: #d1d5db;
+  --border: #374151;
+  --secondary: #374151;
+  --secondary-hover: #4b5563;
+}
+
+body.darkMode .metaItem,
+body.darkMode .perfilField,
+body.darkMode .authCard,
+body.darkMode .formCard,
+body.darkMode .perfilCard,
+body.darkMode .bookCard,
+body.darkMode .detalleLibroCard,
+body.darkMode .navbar,
+body.darkMode .readingPdfContainer {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body.darkMode .searchInput,
+body.darkMode input,
+body.darkMode select,
+body.darkMode textarea {
+  background: #111827;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+body.darkMode .navbarTitle,
+body.darkMode h1,
+body.darkMode h2,
+body.darkMode h3,
+body.darkMode p,
+body.darkMode span,
+body.darkMode strong,
+body.darkMode label {
+  color: var(--text);
+}

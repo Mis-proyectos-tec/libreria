@@ -8,7 +8,6 @@ export default function PerfilPage() {
   const [formData, setFormData] = useState({
     name: currentUser?.name || "",
     email: currentUser?.email || "",
-    role: currentUser?.role || "Lector",
   });
 
   if (!currentUser) return <p>No hay usuario autenticado.</p>;
@@ -31,15 +30,22 @@ export default function PerfilPage() {
   }
 
   function handleSave() {
+    localStorage.setItem(
+      `perfil-${currentUser.id}`,
+      JSON.stringify(formData)
+    );
     setIsEditing(false);
   }
 
   function handleCancel() {
+    const savedProfile = localStorage.getItem(`perfil-${currentUser.id}`);
+    const parsed = savedProfile ? JSON.parse(savedProfile) : null;
+
     setFormData({
-      name: currentUser?.name || "",
-      email: currentUser?.email || "",
-      role: currentUser?.role || "Lector",
+      name: parsed?.name || currentUser?.name || "",
+      email: parsed?.email || currentUser?.email || "",
     });
+
     setIsEditing(false);
   }
 
@@ -96,18 +102,6 @@ export default function PerfilPage() {
               />
             ) : (
               <p>{formData.email}</p>
-            )}
-          </div>
-
-          <div className="perfilField">
-            <label>Rol</label>
-            {isEditing ? (
-              <select name="role" value={formData.role} onChange={handleChange}>
-                <option value="Lector">Lector</option>
-                <option value="Administrador">Administrador</option>
-              </select>
-            ) : (
-              <p>{formData.role}</p>
             )}
           </div>
         </div>

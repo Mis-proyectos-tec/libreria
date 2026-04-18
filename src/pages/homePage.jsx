@@ -7,43 +7,58 @@ import { useAppData } from "../context/appDataContext.jsx";
 export default function HomePage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, favorites, readingProgress, loading, error } = useAppData();
+  const { books, loading, error } = useAppData();
+
+  function getProgressKey(bookId) {
+    return `reading-progress-${currentUser?.id}-${bookId}`;
+  }
+
+  function getLocalProgress(bookId) {
+    const saved = localStorage.getItem(getProgressKey(bookId));
+    if (!saved) return null;
+
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return null;
+    }
+  }
 
   const userBooks = useMemo(() => {
     if (!currentUser) return [];
-    return books.filter((book) => book.userId === currentUser.id);
+    return books.filter((book) => String(book.userId) === String(currentUser.id));
   }, [books, currentUser]);
 
   const continueReadingBooks = useMemo(() => {
-    if (!currentUser) return [];
-
-    return readingProgress
-      .filter((item) => item.userId === currentUser.id)
-      .map((progressItem) => {
-        const book = books.find((item) => item.id === progressItem.bookId);
-        if (!book) return null;
+    return userBooks
+      .map((book) => {
+        const progress = getLocalProgress(book.id);
+        if (!progress) return null;
 
         return {
           ...book,
-          progress: progressItem.percentage || 0,
-          currentPage: progressItem.currentPage || 1,
+          currentPage: progress.currentPage || 1,
+          percentage: progress.percentage || 0,
+          updatedAt: progress.updatedAt || "",
         };
       })
-      .filter(Boolean);
-  }, [readingProgress, books, currentUser]);
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  }, [userBooks]);
+
+  function getFavoriteKey() {
+    return `favorites-${currentUser?.id}`;
+  }
+
+  function getFavorites() {
+    const saved = localStorage.getItem(getFavoriteKey());
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  const favoriteIds = getFavorites();
 
   const favoriteBooks = useMemo(() => {
-    if (!currentUser) return [];
-
-    const favoriteIds = favorites
-      .filter((fav) => fav.userId === currentUser.id)
-      .map((fav) => fav.bookId);
-
-    return books.filter((book) => favoriteIds.includes(book.id));
-  }, [books, favorites, currentUser]);
-
-  const recentBooks = useMemo(() => {
-    return userBooks.slice(0, 8);
+    return userBooks.filter((book) => favoriteIds.includes(book.id));
   }, [userBooks]);
 
   if (!currentUser) return <p>Debes iniciar sesión.</p>;
@@ -55,29 +70,10 @@ export default function HomePage() {
       <section className="heroSection">
         <div className="heroContent">
           <span className="heroBadge">Biblioteca digital</span>
-          <h1 className="heroTitle">
-            Organiza tus libros y continúa leyendo fácilmente
-          </h1>
+          <h1 className="heroTitle">Bienvenido, {currentUser.name}</h1>
           <p className="heroText">
-            Administra tu biblioteca, consulta tus favoritos y retoma tus lecturas
-            desde un solo lugar.
+            Continúa tus lecturas, revisa tu biblioteca y gestiona tus favoritos.
           </p>
-
-          <div className="heroButtons">
-            <button
-              className="primaryButton"
-              onClick={() => navigate("/biblioteca")}
-            >
-              Ver biblioteca
-            </button>
-
-            <button
-              className="secondaryButton"
-              onClick={() => navigate("/favoritos")}
-            >
-              Ver favoritos
-            </button>
-          </div>
         </div>
       </section>
 
@@ -87,14 +83,14 @@ export default function HomePage() {
         </div>
 
         {continueReadingBooks.length === 0 ? (
-          <p>No tienes lecturas en progreso.</p>
+          <p>No tienes lecturas guardadas.</p>
         ) : (
           <div className="booksGrid">
             {continueReadingBooks.map((book) => (
               <div
                 key={book.id}
                 onClick={() =>
-                  navigate("/detalle-libro", { state: { libroId: book.id } })
+                  navigate("/lectura", { state: { libroId: book.id } })
                 }
                 style={{ cursor: "pointer" }}
               >
@@ -102,7 +98,7 @@ export default function HomePage() {
                   titulo={book.title}
                   autor={book.author}
                   portada={book.coverUrl || "/assets/defaultBook.png"}
-                  progreso={book.progress}
+                  progreso={book.percentage}
                   mostrarProgreso={true}
                 />
               </div>
@@ -116,11 +112,11 @@ export default function HomePage() {
           <h2>Biblioteca</h2>
         </div>
 
-        {recentBooks.length === 0 ? (
+        {userBooks.length === 0 ? (
           <p>No tienes libros en tu biblioteca.</p>
         ) : (
           <div className="booksGrid">
-            {recentBooks.map((book) => (
+            {userBooks.map((book) => (
               <div
                 key={book.id}
                 onClick={() =>
@@ -145,7 +141,7 @@ export default function HomePage() {
         </div>
 
         {favoriteBooks.length === 0 ? (
-          <p>No tienes libros en favoritos.</p>
+          <p>No tienes favoritos.</p>
         ) : (
           <div className="booksGrid">
             {favoriteBooks.map((book) => (

@@ -1,15 +1,55 @@
-import { getUsers } from "./booksService.js";
+import { createContext, useContext, useEffect, useState } from "react";
+import { getUsers } from "../services/booksService.js";
 
-export async function loginUser(email, password) {
-  const users = await getUsers();
+const AuthContext = createContext();
 
-  const user = users.find(
-    (item) => item.email === email && item.password === password
-  );
+export function AuthProvider({ children }) {
+  const [currentUser, setCurrentUser] = useState(null);
 
-  if (!user) {
-    throw new Error("Correo o contraseña incorrectos");
+  useEffect(() => {
+    const savedUser = localStorage.getItem("currentUser");
+
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  async function login(email, password) {
+    const users = await getUsers();
+
+    const user = users.find(
+      (item) => item.email === email && item.password === password
+    );
+
+    if (!user) {
+      throw new Error("Correo o contraseña incorrectos");
+    }
+
+    setCurrentUser(user);
+    localStorage.setItem("currentUser", JSON.stringify(user));
+
+    return user;
   }
 
-  return user;
+  function logout() {
+    setCurrentUser(null);
+    localStorage.removeItem("currentUser");
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        login,
+        logout,
+        isAuthenticated: Boolean(currentUser),
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
 }

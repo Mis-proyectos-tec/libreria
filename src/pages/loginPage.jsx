@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext.jsx";
-import { getUsers } from "../services/usersService.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -30,27 +29,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const users = await getUsers();
-
-      const usuarioEncontrado = users.find((user) => {
-        return (
-          String(user.email).trim().toLowerCase() ===
-            String(formData.email).trim().toLowerCase() &&
-          String(user.password).trim() === String(formData.password).trim()
-        );
-      });
-
-      if (!usuarioEncontrado) {
-        setErrorMessage("Correo o contraseña incorrectos.");
-        setLoading(false);
-        return;
-      }
-
-      login(usuarioEncontrado);
+      await login(formData.email, formData.password);
       navigate("/home");
     } catch (error) {
       console.error(error);
-      setErrorMessage("No se pudo iniciar sesión.");
+      setErrorMessage("Correo o contraseña incorrectos.");
     } finally {
       setLoading(false);
     }

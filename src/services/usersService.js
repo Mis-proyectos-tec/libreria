@@ -64,7 +64,6 @@ export async function updateUser(id, user) {
   return response.json();
 }
 
-
 export async function deleteUser(id) {
   const response = await fetch(`${API_BASE_URL}/${id}`, {
     method: "DELETE",

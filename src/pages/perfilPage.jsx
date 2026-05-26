@@ -2,12 +2,31 @@ import { useState } from "react";
 import { useAuth } from "../context/authContext.jsx";
 
 export default function PerfilPage() {
-  const { currentUser } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const {
+    currentUser,
+    updateProfileName,
+    updateProfileUsername,
+    updateProfileEmail,
+    updateProfilePassword,
+  } = useAuth();
 
-  const [formData, setFormData] = useState({
-    name: currentUser?.name || "",
-    email: currentUser?.email || "",
+  const [activeSection, setActiveSection] = useState(null);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [nameValue, setNameValue] = useState(currentUser?.name || "");
+  const [usernameValue, setUsernameValue] = useState(currentUser?.username || "");
+
+  const [emailForm, setEmailForm] = useState({
+    currentPassword: "",
+    newEmail: currentUser?.email || "",
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   if (!currentUser) return <p>No hay usuario autenticado.</p>;
@@ -17,93 +36,294 @@ export default function PerfilPage() {
       .split(" ")
       .filter(Boolean)
       .slice(0, 2)
-      .map((word) => word[0]?.toUpperCase())
+      .map((w) => w[0]?.toUpperCase())
       .join("");
   }
 
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  function resetMessages() {
+    setSaveMessage("");
+    setErrorMessage("");
   }
 
-  function handleSave() {
-    localStorage.setItem(
-      `perfil-${currentUser.id}`,
-      JSON.stringify(formData)
-    );
-    setIsEditing(false);
+  function openSection(section) {
+    setActiveSection(section);
+    resetMessages();
   }
 
-  function handleCancel() {
-    const savedProfile = localStorage.getItem(`perfil-${currentUser.id}`);
-    const parsed = savedProfile ? JSON.parse(savedProfile) : null;
+  function closeSection() {
+    setActiveSection(null);
+    resetMessages();
+    setNameValue(currentUser?.name || "");
+    setUsernameValue(currentUser?.username || "");
+    setEmailForm({ currentPassword: "", newEmail: currentUser?.email || "" });
+    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  }
 
-    setFormData({
-      name: parsed?.name || currentUser?.name || "",
-      email: parsed?.email || currentUser?.email || "",
-    });
+  async function handleSaveName(e) {
+    e.preventDefault();
+    resetMessages();
+    setLoading(true);
+    try {
+      await updateProfileName(nameValue);
+      setSaveMessage("Nombre actualizado correctamente.");
+      setActiveSection(null);
+    } catch {
+      setErrorMessage("No se pudo actualizar el nombre.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    setIsEditing(false);
+  async function handleSaveUsername(e) {
+    e.preventDefault();
+    resetMessages();
+    setLoading(true);
+    try {
+      await updateProfileUsername(usernameValue);
+      setSaveMessage("Nombre de usuario actualizado correctamente.");
+      setActiveSection(null);
+    } catch {
+      setErrorMessage("No se pudo actualizar el nombre de usuario.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSaveEmail(e) {
+    e.preventDefault();
+    resetMessages();
+    setLoading(true);
+    try {
+      await updateProfileEmail(emailForm.currentPassword, emailForm.newEmail);
+      setSaveMessage("Correo actualizado correctamente.");
+      setActiveSection(null);
+      setEmailForm({ currentPassword: "", newEmail: emailForm.newEmail });
+    } catch (error) {
+      if (
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        setErrorMessage("La contraseña actual es incorrecta.");
+      } else if (error.code === "auth/email-already-in-use") {
+        setErrorMessage("Ese correo ya está en uso por otra cuenta.");
+      } else {
+        setErrorMessage("No se pudo actualizar el correo.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSavePassword(e) {
+    e.preventDefault();
+    resetMessages();
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setErrorMessage("Las contraseñas nuevas no coinciden.");
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setErrorMessage("La nueva contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await updateProfilePassword(passwordForm.currentPassword, passwordForm.newPassword);
+      setSaveMessage("Contraseña actualizada correctamente.");
+      setActiveSection(null);
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      if (
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        setErrorMessage("La contraseña actual es incorrecta.");
+      } else {
+        setErrorMessage("No se pudo actualizar la contraseña.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <section className="perfilPage">
       <div className="perfilCard">
+
         <div className="perfilHeader">
-          <div className="perfilAvatar">{getInitials(formData.name)}</div>
-
+          <div className="perfilAvatar">{getInitials(currentUser.name)}</div>
           <div className="perfilHeaderInfo">
-            <h1>{formData.name}</h1>
-            <p>{formData.email}</p>
+            <h1>{currentUser.name}</h1>
+            <p>@{currentUser.username}</p>
+            <p>{currentUser.email}</p>
           </div>
-
-          {!isEditing ? (
-            <button className="primaryButton" onClick={() => setIsEditing(true)}>
-              Editar perfil
-            </button>
-          ) : (
-            <div className="perfilActions">
-              <button className="primaryButton" onClick={handleSave}>
-                Guardar
-              </button>
-              <button className="secondaryButton" onClick={handleCancel}>
-                Cancelar
-              </button>
-            </div>
-          )}
         </div>
 
+        {saveMessage && <p className="saveMessage">{saveMessage}</p>}
+        {errorMessage && <p className="unsavedWarning">{errorMessage}</p>}
+
         <div className="perfilGrid">
+
+          {/* Nombre */}
           <div className="perfilField">
-            <label>Nombre</label>
-            {isEditing ? (
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-              />
+            <label>Nombre completo</label>
+            {activeSection === "name" ? (
+              <form onSubmit={handleSaveName} style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  required
+                />
+                <button className="primaryButton" type="submit" disabled={loading}>
+                  {loading ? "Guardando..." : "Guardar"}
+                </button>
+                <button className="secondaryButton" type="button" onClick={closeSection}>
+                  Cancelar
+                </button>
+              </form>
             ) : (
-              <p>{formData.name}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <p>{currentUser.name}</p>
+                <button className="secondaryButton" onClick={() => openSection("name")}>
+                  Editar
+                </button>
+              </div>
             )}
           </div>
 
+          {/* Username */}
           <div className="perfilField">
-            <label>Correo</label>
-            {isEditing ? (
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-              />
+            <label>Nombre de usuario</label>
+            {activeSection === "username" ? (
+              <form onSubmit={handleSaveUsername} style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  value={usernameValue}
+                  onChange={(e) => setUsernameValue(e.target.value)}
+                  required
+                />
+                <button className="primaryButton" type="submit" disabled={loading}>
+                  {loading ? "Guardando..." : "Guardar"}
+                </button>
+                <button className="secondaryButton" type="button" onClick={closeSection}>
+                  Cancelar
+                </button>
+              </form>
             ) : (
-              <p>{formData.email}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <p>@{currentUser.username}</p>
+                <button className="secondaryButton" onClick={() => openSection("username")}>
+                  Editar
+                </button>
+              </div>
             )}
           </div>
+
+          {/* Correo */}
+          <div className="perfilField">
+            <label>Correo electrónico</label>
+            {activeSection === "email" ? (
+              <form onSubmit={handleSaveEmail}>
+                <div className="formGroup">
+                  <label>Nuevo correo</label>
+                  <input
+                    type="email"
+                    value={emailForm.newEmail}
+                    onChange={(e) =>
+                      setEmailForm((prev) => ({ ...prev, newEmail: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="formGroup">
+                  <label>Contraseña actual (para confirmar)</label>
+                  <input
+                    type="password"
+                    value={emailForm.currentPassword}
+                    onChange={(e) =>
+                      setEmailForm((prev) => ({ ...prev, currentPassword: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                  <button className="primaryButton" type="submit" disabled={loading}>
+                    {loading ? "Guardando..." : "Guardar"}
+                  </button>
+                  <button className="secondaryButton" type="button" onClick={closeSection}>
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <p>{currentUser.email}</p>
+                <button className="secondaryButton" onClick={() => openSection("email")}>
+                  Editar
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Contraseña */}
+          <div className="perfilField">
+            <label>Contraseña</label>
+            {activeSection === "password" ? (
+              <form onSubmit={handleSavePassword}>
+                <div className="formGroup">
+                  <label>Contraseña actual</label>
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) =>
+                      setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="formGroup">
+                  <label>Nueva contraseña</label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) =>
+                      setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="formGroup">
+                  <label>Confirmar nueva contraseña</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                  <button className="primaryButton" type="submit" disabled={loading}>
+                    {loading ? "Guardando..." : "Guardar"}
+                  </button>
+                  <button className="secondaryButton" type="button" onClick={closeSection}>
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <p>••••••••</p>
+                <button className="secondaryButton" onClick={() => openSection("password")}>
+                  Cambiar
+                </button>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </section>

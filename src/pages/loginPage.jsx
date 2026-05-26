@@ -16,11 +16,7 @@ export default function LoginPage() {
 
   function handleChange(event) {
     const { name, value } = event.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
   async function handleSubmit(event) {
@@ -32,8 +28,17 @@ export default function LoginPage() {
       await login(formData.email, formData.password);
       navigate("/home");
     } catch (error) {
-      console.error(error);
-      setErrorMessage("Correo o contraseña incorrectos.");
+      if (
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/user-not-found"
+      ) {
+        setErrorMessage("Correo o contraseña incorrectos.");
+      } else if (error.code === "auth/too-many-requests") {
+        setErrorMessage("Demasiados intentos. Espere un momento e intente de nuevo.");
+      } else {
+        setErrorMessage("Error al iniciar sesión. Intente de nuevo.");
+      }
     } finally {
       setLoading(false);
     }
@@ -73,6 +78,10 @@ export default function LoginPage() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
+
+        <button className="linkButton" onClick={() => navigate("/registro")}>
+          ¿No tienes cuenta? Regístrate
+        </button>
       </div>
     </section>
   );

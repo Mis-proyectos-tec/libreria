@@ -4,6 +4,7 @@ import Navbar from "./components/navBar.jsx";
 
 import HomePage from "./pages/homePage.jsx";
 import LoginPage from "./pages/loginPage.jsx";
+import RegistroPage from "./pages/registroPage.jsx";
 import BibliotecaPage from "./pages/bibliotecaPage.jsx";
 import FavoritosPage from "./pages/favoritosPage.jsx";
 import PerfilPage from "./pages/perfilPage.jsx";
@@ -38,6 +39,9 @@ export default function App() {
 
           {/* login */}
           <Route path="/login" element={<LoginPage />} />
+
+          {/* registro */}
+          <Route path="/registro" element={<RegistroPage />} />
 
           {/* home */}
           <Route

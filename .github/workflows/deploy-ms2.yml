@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'microservicios/ms2-nodejs/**'
+  workflow_dispatch:
 
 jobs:
   deploy:

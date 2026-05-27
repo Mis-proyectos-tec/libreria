@@ -1,33 +1,36 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
+import { deleteFavorite } from "../services/booksService.js";
 import BookCard from "../components/bookCard.jsx";
 
 export default function FavoritosPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, loading, error } = useAppData();
+  const { books, favorites, loading, error, reloadAppData } = useAppData();
 
-  function getFavoriteKey() {
-    return `favorites-${currentUser?.id}`;
-  }
-
-  function getFavorites() {
-    const saved = localStorage.getItem(getFavoriteKey());
-    return saved ? JSON.parse(saved) : [];
-  }
-
-  const [favoritosIds, setFavoritosIds] = useState(getFavorites());
+  const misRegistrosFavoritos = useMemo(() => {
+    return favorites.filter((f) => String(f.userId) === String(currentUser?.id));
+  }, [favorites, currentUser?.id]);
 
   const favoritos = useMemo(() => {
-    return books.filter((book) => favoritosIds.includes(book.id));
-  }, [books, favoritosIds]);
+    return books.filter((book) =>
+      misRegistrosFavoritos.some((f) => String(f.bookId) === String(book.id))
+    );
+  }, [books, misRegistrosFavoritos]);
 
-  function quitarFavorito(bookId) {
-    const nuevos = favoritosIds.filter((id) => id !== bookId);
-    setFavoritosIds(nuevos);
-    localStorage.setItem(getFavoriteKey(), JSON.stringify(nuevos));
+  async function quitarFavorito(bookId) {
+    const registro = misRegistrosFavoritos.find(
+      (f) => String(f.bookId) === String(bookId)
+    );
+    if (!registro) return;
+    try {
+      await deleteFavorite(registro.id);
+      await reloadAppData();
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   if (loading) return <p>Cargando favoritos...</p>;

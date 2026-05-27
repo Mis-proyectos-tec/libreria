@@ -5,6 +5,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
+import { createReadingProgress, updateReadingProgress } from "../services/booksService.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -15,7 +16,7 @@ export default function LecturaPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
-  const { books, loading, error } = useAppData();
+  const { books, loading, error, readingProgress, reloadAppData } = useAppData();
 
   const libroId = location.state?.libroId || 1;
 
@@ -23,30 +24,27 @@ export default function LecturaPage() {
     return books.find((item) => item.id === libroId);
   }, [books, libroId]);
 
-  function getProgressKey() {
-    return `reading-progress-${currentUser?.id}-${libroId}`;
-  }
-
-  function cargarProgresoLocal() {
-    const saved = localStorage.getItem(getProgressKey());
-    if (!saved) return null;
-
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return null;
-    }
-  }
-
-  const progresoGuardado = cargarProgresoLocal();
-  const paginaInicial = progresoGuardado?.currentPage || 1;
+  const progresoExistente = useMemo(() => {
+    return readingProgress.find(
+      (p) =>
+        String(p.userId) === String(currentUser?.id) &&
+        String(p.bookId) === String(libroId)
+    ) || null;
+  }, [readingProgress, currentUser?.id, libroId]);
 
   const [numPages, setNumPages] = useState(0);
-  const [pageNumber, setPageNumber] = useState(paginaInicial);
-  const [savedPage, setSavedPage] = useState(paginaInicial);
+  const [pageNumber, setPageNumber] = useState(progresoExistente?.currentPage || 1);
+  const [savedPage, setSavedPage] = useState(progresoExistente?.currentPage || 1);
   const [scale, setScale] = useState(1.15);
   const [darkMode, setDarkMode] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+
+  useEffect(() => {
+    if (progresoExistente?.currentPage) {
+      setPageNumber(progresoExistente.currentPage);
+      setSavedPage(progresoExistente.currentPage);
+    }
+  }, [progresoExistente?.currentPage]);
 
   const hasUnsavedChanges = pageNumber !== savedPage;
 
@@ -80,9 +78,8 @@ export default function LecturaPage() {
     setSaveMessage("");
   }
 
-  function guardarProgresoLocal() {
+  async function guardarProgreso() {
     const percentage = numPages ? Math.round((pageNumber / numPages) * 100) : 0;
-
     const data = {
       userId: currentUser?.id,
       bookId: libroId,
@@ -91,9 +88,18 @@ export default function LecturaPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    localStorage.setItem(getProgressKey(), JSON.stringify(data));
-    setSavedPage(pageNumber);
-    setSaveMessage(`Progreso guardado en la página ${pageNumber}.`);
+    try {
+      if (progresoExistente) {
+        await updateReadingProgress(progresoExistente.id, data);
+      } else {
+        await createReadingProgress(data);
+      }
+      setSavedPage(pageNumber);
+      setSaveMessage(`Progreso guardado en la página ${pageNumber}.`);
+      await reloadAppData();
+    } catch {
+      setSaveMessage("Error al guardar el progreso.");
+    }
   }
 
   function handleVolver() {
@@ -153,7 +159,7 @@ export default function LecturaPage() {
               {darkMode ? "☀ Claro" : "🌙 Oscuro"}
             </button>
 
-            <button className="primaryButton" onClick={guardarProgresoLocal}>
+            <button className="primaryButton" onClick={guardarProgreso}>
               Guardar progreso
             </button>
           </div>

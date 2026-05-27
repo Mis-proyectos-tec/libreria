@@ -2,13 +2,13 @@ import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppData } from "../context/appDataContext.jsx";
 import { useAuth } from "../context/authContext.jsx";
-import { updateBook } from "../services/booksService.js";
+import { updateBook, createFavorite, deleteFavorite } from "../services/booksService.js";
 
 export default function DetalleLibroPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
-  const { books, loading, error, reloadAppData } = useAppData();
+  const { books, loading, error, reloadAppData, favorites } = useAppData();
 
   const libroId = location.state?.libroId;
 
@@ -16,16 +16,17 @@ export default function DetalleLibroPage() {
     return books.find((item) => String(item.id) === String(libroId)) || null;
   }, [books, libroId]);
 
-  function getFavoriteKey() {
-    return `favorites-${currentUser?.id}`;
-  }
+  const favoritoActual = useMemo(() => {
+    if (!book || !currentUser) return null;
+    return favorites.find(
+      (f) =>
+        String(f.userId) === String(currentUser.id) &&
+        String(f.bookId) === String(book.id)
+    ) || null;
+  }, [favorites, book, currentUser]);
 
-  function getFavorites() {
-    const saved = localStorage.getItem(getFavoriteKey());
-    return saved ? JSON.parse(saved) : [];
-  }
+  const esFavorito = Boolean(favoritoActual);
 
-  const [favoritos, setFavoritos] = useState(getFavorites());
   const [isEditing, setIsEditing] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
@@ -41,21 +42,18 @@ export default function DetalleLibroPage() {
     pdfUrl: book?.pdfUrl || "",
   });
 
-  const esFavorito = book ? favoritos.includes(book.id) : false;
-
-  function toggleFavorito() {
+  async function toggleFavorito() {
     if (!book) return;
-
-    let nuevosFavoritos;
-
-    if (esFavorito) {
-      nuevosFavoritos = favoritos.filter((id) => id !== book.id);
-    } else {
-      nuevosFavoritos = [...favoritos, book.id];
+    try {
+      if (esFavorito) {
+        await deleteFavorite(favoritoActual.id);
+      } else {
+        await createFavorite({ userId: currentUser.id, bookId: book.id });
+      }
+      await reloadAppData();
+    } catch (err) {
+      console.error(err);
     }
-
-    setFavoritos(nuevosFavoritos);
-    localStorage.setItem(getFavoriteKey(), JSON.stringify(nuevosFavoritos));
   }
 
   function handleChange(event) {

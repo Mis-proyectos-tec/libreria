@@ -14,17 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: microservicios/ms2-nodejs/package-lock.json
-
-      - name: Install dependencies
-        run: npm install
-        working-directory: microservicios/ms2-nodejs
-
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:

@@ -15,9 +15,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+        working-directory: microservicios/ms2-nodejs
+
+      - name: Zip package
+        run: zip -r ms2.zip . --exclude "*.git*"
+        working-directory: microservicios/ms2-nodejs
+
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'readflow-ms2'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_MS2 }}
-          package: './microservicios/ms2-nodejs'
+          package: './microservicios/ms2-nodejs/ms2.zip'

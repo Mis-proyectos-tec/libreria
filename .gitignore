@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 local.settings.json
+readflow-backend/
 # Editor directories and files
 .vscode/*
 .env

@@ -10,6 +10,8 @@ import FavoritosPage from "./pages/favoritosPage.jsx";
 import PerfilPage from "./pages/perfilPage.jsx";
 import DetalleLibroPage from "./pages/detalleLibroPage.jsx";
 import LecturaPage from "./pages/lecturaPage.jsx";
+import AdminLibrosPage from "./pages/adminLibrosPage.jsx";
+import FormLibroPage from "./pages/formLibroPage.jsx";
 
 import { useAuth } from "./context/authContext.jsx";
 
@@ -105,6 +107,34 @@ export default function App() {
             element={
               isAuthenticated
                 ? <LecturaPage />
+                : <Navigate to="/login" />
+            }
+          />
+
+          {/* admin libros */}
+          <Route
+            path="/admin-libros"
+            element={
+              isAuthenticated
+                ? <AdminLibrosPage />
+                : <Navigate to="/login" />
+            }
+          />
+
+          {/* nuevo / editar libro */}
+          <Route
+            path="/nuevo-libro"
+            element={
+              isAuthenticated
+                ? <FormLibroPage />
+                : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/editar-libro"
+            element={
+              isAuthenticated
+                ? <FormLibroPage />
                 : <Navigate to="/login" />
             }
           />

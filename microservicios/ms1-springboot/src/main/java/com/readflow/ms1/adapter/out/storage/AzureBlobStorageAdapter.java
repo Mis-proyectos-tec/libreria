@@ -5,6 +5,8 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.common.policy.RequestRetryOptions;
+import com.azure.storage.common.policy.RetryPolicyType;
 import com.readflow.ms1.domain.port.out.FileStoragePort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,8 +22,11 @@ public class AzureBlobStorageAdapter implements FileStoragePort {
         @Value("${azure.storage.connection-string}") String connectionString,
         @Value("${azure.storage.container-name}") String containerName
     ) {
+        RequestRetryOptions retryOptions = new RequestRetryOptions(
+            RetryPolicyType.FIXED, 2, 60, null, null, null);
         BlobServiceClient serviceClient = new BlobServiceClientBuilder()
             .connectionString(connectionString)
+            .retryOptions(retryOptions)
             .buildClient();
         this.containerClient = serviceClient.getBlobContainerClient(containerName);
     }

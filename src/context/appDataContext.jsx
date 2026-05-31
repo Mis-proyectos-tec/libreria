@@ -24,8 +24,8 @@ export function AppDataProvider({ children }) {
       setLoading(true);
       setError("");
 
-      const [usersData, categoriesData, booksData, progressData, favoritesData] =
-        await Promise.all([
+      const [usersRes, categoriesRes, booksRes, progressRes, favoritesRes] =
+        await Promise.allSettled([
           getUsers(),
           getCategories(),
           getBooks(),
@@ -33,11 +33,13 @@ export function AppDataProvider({ children }) {
           getFavorites(),
         ]);
 
-      setUsers(Array.isArray(usersData) ? usersData : []);
-      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-      setBooks(Array.isArray(booksData) ? booksData : []);
-      setReadingProgress(Array.isArray(progressData) ? progressData : []);
-      setFavorites(Array.isArray(favoritesData) ? favoritesData : []);
+      const val = (r) => (r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []);
+
+      setUsers(val(usersRes));
+      setCategories(val(categoriesRes));
+      setBooks(val(booksRes));
+      setReadingProgress(val(progressRes));
+      setFavorites(val(favoritesRes));
     } catch (err) {
       console.error(err);
       setError("No se pudo cargar la información de la app.");

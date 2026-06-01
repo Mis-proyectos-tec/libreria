@@ -9,7 +9,10 @@ const defaultHeaders = {
 async function apiRequest(endpoint, options = {}) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    headers: options.headers || defaultHeaders,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
   });
 
   if (!response.ok) {

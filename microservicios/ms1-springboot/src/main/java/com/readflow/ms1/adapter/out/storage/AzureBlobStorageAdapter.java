@@ -41,4 +41,11 @@ public class AzureBlobStorageAdapter implements FileStoragePort {
         }
         return blobClient.getBlobUrl();
     }
+
+    @Override
+    public byte[] downloadFile(String fileUrl) {
+        String blobName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+        BlobClient blobClient = containerClient.getBlobClient(blobName);
+        return blobClient.downloadContent().toBytes();
+    }
 }

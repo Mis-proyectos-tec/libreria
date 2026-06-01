@@ -7,6 +7,8 @@ import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
 import { createReadingProgress, updateReadingProgress } from "../services/booksService.js";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url
@@ -187,7 +189,7 @@ export default function LecturaPage() {
 
         <div className={`readingPdfContainer ${darkMode ? "pdfDarkMode" : ""}`}>
           <Document
-            file={book.pdfUrl}
+            file={`${API_BASE_URL}/books/${book.id}/pdf`}
             onLoadSuccess={onDocumentLoadSuccess}
             loading={<p>Cargando PDF...</p>}
             error={<p>No se pudo cargar el PDF.</p>}

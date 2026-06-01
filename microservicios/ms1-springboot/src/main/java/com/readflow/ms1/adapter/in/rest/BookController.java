@@ -123,4 +123,21 @@ public class BookController {
         bookUseCase.deleteBook(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<?> getBookPdf(@PathVariable Long id) {
+        return bookUseCase.getBookById(id)
+            .map(book -> {
+                try {
+                    byte[] pdfBytes = fileStorage.downloadFile(book.getPdfUrl());
+                    return ResponseEntity.ok()
+                        .header("Content-Type", "application/pdf")
+                        .header("Content-Disposition", "inline; filename=\"" + book.getPdfFileName() + "\"")
+                        .body(pdfBytes);
+                } catch (Exception e) {
+                    return ResponseEntity.status(500).body("Error al descargar PDF: " + e.getMessage());
+                }
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
 }

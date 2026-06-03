@@ -26,12 +26,6 @@ jobs:
           cd microservicios/ms1-springboot
           mvn clean package -DskipTests
 
-      - name: Prepare deployment
-        run: |
-          cd microservicios/ms1-springboot
-          # Renombrar JAR a app.jar para que Azure lo encuentre fácilmente
-          mv target/*.jar target/app.jar
-
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:

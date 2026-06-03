@@ -10,7 +10,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|---|---|
 | Frontend | `src/` | React 19, Vite, React Router v7 | Completo |
 | MS-2 Backend | `microservicios/ms2-nodejs/` | Node.js, Express, Mongoose | Completo y desplegado |
-| MS-1 Backend | `microservicios/ms1-springboot/` *(pendiente)* | Spring Boot + Hexagonal Architecture | Pendiente |
 | MS-3 Backend | `microservicios/ms3-python/` *(pendiente)* | Python + FastAPI (Notifications) | Pendiente |
 
 ---
@@ -33,11 +32,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Pendiente
 
-- [ ] **MS-1 Spring Boot** — Books & Categories con Hexagonal Architecture + Azure SQL
 - [ ] **MS-3 Python FastAPI** — Notificaciones con Azure Service Bus + WebSocket
-- [ ] Conectar frontend a MS-1 cuando esté listo (reemplazar mock de books/categories en APIM)
-- [ ] Colección Postman — 20 endpoints, mínimo 1 test por endpoint (entregable)
-- [ ] GitHub Actions para MS-1 y MS-3
+- [ ] Colección Postman — 14 endpoints, mínimo 1 test por endpoint (entregable)
+- [ ] GitHub Actions para MS-3
 - [ ] Documentación Swagger / OpenAPI
 - [ ] Video demostrativo — máx 5 min, arquitectura + flujos de negocio
 
@@ -45,30 +42,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Próximos Pasos (orden recomendado)
 
-### 1. MS-1 — Spring Boot (Books & Categories)
-- Crear proyecto Spring Boot en `microservicios/ms1-springboot/`
-- Arquitectura Hexagonal: dominio / puertos / adaptadores
-- Conectar a Azure SQL Database
-- Implementar los 6 endpoints (GET/POST/PUT/DELETE books + GET categories)
-- Crear Azure App Service para MS-1
-- Configurar GitHub Actions `deploy-ms1.yml`
-- Cambiar los endpoints de books/categories en APIM de mock → `set-backend-service` al MS-1
-
-### 2. MS-3 — Python FastAPI (Notifications)
+### 1. MS-3 — Python FastAPI (Notifications)
 - Crear proyecto FastAPI en `microservicios/ms3-python/`
 - Conectar a Azure Service Bus (receptor de mensajes)
 - WebSocket para notificaciones en tiempo real al frontend
-- MS-1 o MS-2 deben publicar eventos al Service Bus (ej. libro agregado)
+- MS-2 debe publicar eventos al Service Bus (ej. libro agregado)
 - Crear Azure App Service para MS-3
 - Configurar GitHub Actions `deploy-ms3.yml`
 
-### 3. Postman Collection
-- Crear colección con los 20 endpoints (6 MS-1 + 14 MS-2)
+### 2. Postman Collection
+- Crear colección con los 14 endpoints de MS-2
 - Al menos 1 test automatizado por endpoint (status code, schema, etc.)
 - Exportar como JSON para entrega
 
-### 4. Documentación Final
-- Swagger/OpenAPI para MS-1 y MS-2
+### 3. Documentación Final
+- Swagger/OpenAPI para MS-2
 - Video máx 5 min: mostrar arquitectura APIM → microservicios, flujos de login, favoritos, lectura, notificaciones
 
 ---
@@ -186,26 +174,6 @@ Fully migrated to MS-2 API (no longer uses localStorage):
 
 ---
 
-## MS-1 — Spring Boot (Books & Categories)
-
-Spring Boot microservice with Hexagonal Architecture for Books and Categories.
-**Estado: Pendiente de implementar.**
-
-### Endpoints — 6 operations
-
-| Method | Endpoint | Notes |
-|---|---|---|
-| GET | `/books` | |
-| GET | `/books/:id` | |
-| POST | `/books` | |
-| PUT | `/books/:id` | |
-| DELETE | `/books/:id` | |
-| GET | `/categories` | |
-
-> Books y categories actualmente sirven datos mock desde APIM. Al desplegar MS-1, cambiar las policies de esos endpoints a `set-backend-service`.
-
----
-
 ## MS-2 — `microservicios/ms2-nodejs/`
 
 Node.js + Express microservice for Users, Reading Progress and Favorites. Deployed to Azure App Service, exposed via APIM.
@@ -313,14 +281,14 @@ Trigger event (e.g. book added) → MS-1 or MS-2 publishes to Azure Service Bus 
 Frontend (React)
       ↓
    APIM (single gateway — Ocp-Apim-Subscription-Key)
-      ↓                ↓                  ↓
-MS-1 Spring Boot   MS-2 Node.js      MS-3 Python FastAPI
-Books + Categories  Users +           Notifications
-(Pendiente)         ReadingProgress   (Pendiente)
-                    Favorites
-      ↓                ↓                  ↓
-  Azure SQL        Cosmos DB          Service Bus
-  (Pendiente)      (Activo)           (Pendiente)
+      ↓                  ↓
+MS-2 Node.js      MS-3 Python FastAPI
+Users +           Notifications
+ReadingProgress   (Pendiente)
+Favorites
+      ↓                  ↓
+  Cosmos DB          Service Bus
+  (Activo)           (Pendiente)
 ```
 
 All microservices are exposed exclusively through APIM. Direct backend URLs are protected by digital certificates — only APIM can call them.
@@ -329,8 +297,6 @@ All microservices are exposed exclusively through APIM. Direct backend URLs are 
 
 | Endpoint | Estado | Backend |
 |---|---|---|
-| `/books*` | Mock en APIM | Pendiente MS-1 |
-| `/categories` | Mock en APIM | Pendiente MS-1 |
 | `/users*` | Real — MS-2 | `readflow-ms2` |
 | `/reading-progress*` | Real — MS-2 | `readflow-ms2` |
 | `/favorites*` | Real — MS-2 | `readflow-ms2` |

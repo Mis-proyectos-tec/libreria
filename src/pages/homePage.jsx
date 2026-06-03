@@ -1,15 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BookCard from "../components/bookCard.jsx";
 import StatCard from "../components/StatCard.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
+import { getBookCoverUrl } from "../services/booksService.js";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { books, favorites, readingProgress, loading, error } = useAppData();
+  const [coverUrls, setCoverUrls] = useState({});
 
   const userBooks = useMemo(() => {
     if (!currentUser) return [];
@@ -45,6 +47,33 @@ export default function HomePage() {
       .filter(Boolean)
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   }, [books, readingProgress, currentUser]);
+
+  async function loadCoverUrls() {
+    const allBooks = [...continueReadingBooks, ...misBibliotecaLibros];
+    const covers = {};
+    await Promise.all(
+      allBooks.map(async (book) => {
+        try {
+          if (!book.cover_blob_name && !book.coverBlobName) return;
+          const response = await getBookCoverUrl(book.id);
+          if (response?.coverUrl) covers[book.id] = response.coverUrl;
+        } catch (err) {
+          console.warn(`No se pudo cargar la portada del libro ${book.id}`, err);
+        }
+      })
+    );
+    setCoverUrls(covers);
+  }
+
+  useMemo(() => {
+    if (continueReadingBooks.length > 0 || misBibliotecaLibros.length > 0) {
+      loadCoverUrls();
+    }
+  }, [continueReadingBooks, misBibliotecaLibros]);
+
+  function getCoverImage(book) {
+    return coverUrls[book.id] || book.coverUrl || "/assets/defaultBook.png";
+  }
 
   function getFavoriteKey() { return `favorites-${currentUser?.id}`; }
 
@@ -129,7 +158,7 @@ export default function HomePage() {
                 <BookCard
                   titulo={book.title}
                   autor={book.author}
-                  portada={book.coverUrl || "/assets/defaultBook.png"}
+                  portada={getCoverImage(book)}
                   progreso={book.percentage}
                   mostrarProgreso={true}
                 />
@@ -179,7 +208,7 @@ export default function HomePage() {
                 <BookCard
                   titulo={book.title}
                   autor={book.author}
-                  portada={book.coverUrl || "/assets/defaultBook.png"}
+                  portada={getCoverImage(book)}
                 />
               </div>
             ))}

@@ -7,6 +7,7 @@ import {
   createFavorite,
   deleteFavorite,
   deleteBook,
+  getBookCoverUrl,
 } from "../services/booksService.js";
 
 export default function DetalleLibroPage() {
@@ -385,7 +386,7 @@ useEffect(() => {
               >
                 Editar libro
               </button>
-            ) : esDuenoDelLibro && isEditing (
+            ) : esDuenoDelLibro && isEditing ? (
               <>
                 <button className="primaryButton" onClick={handleSaveBook}>
                   Guardar cambios
@@ -395,7 +396,7 @@ useEffect(() => {
                   Cancelar
                 </button>
               </>
-            )}
+            ) : null}
 
             {esDuenoDelLibro && (
               <button

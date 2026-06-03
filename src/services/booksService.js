@@ -225,21 +225,11 @@ export function deleteBook(id) {
 
 /* READING PROGRESS */
 export function getReadingProgress() {
-  return apiRequest("/reading-progress", {
-    method: "GET",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
-  });
+  return apiRequest("/reading-progress", { method: "GET" });
 }
 
 export function getReadingProgressById(id) {
-  return apiRequest(`/reading-progress/${id}`, {
-    method: "GET",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
-  });
+  return apiRequest(`/reading-progress/${id}`, { method: "GET" });
 }
 
 export function createReadingProgress(progress) {
@@ -257,31 +247,16 @@ export function updateReadingProgress(id, progress) {
 }
 
 export function deleteReadingProgress(id) {
-  return apiRequest(`/reading-progress/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
-  });
+  return apiRequest(`/reading-progress/${id}`, { method: "DELETE" });
 }
 
 /* FAVORITES */
 export function getFavorites() {
-  return apiRequest("/favorites", {
-    method: "GET",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
-  });
+  return apiRequest("/favorites", { method: "GET" });
 }
 
 export function getFavoriteById(id) {
-  return apiRequest(`/favorites/${id}`, {
-    method: "GET",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
-  });
+  return apiRequest(`/favorites/${id}`, { method: "GET" });
 }
 
 export function createFavorite(favorite) {
@@ -292,10 +267,5 @@ export function createFavorite(favorite) {
 }
 
 export function deleteFavorite(id) {
-  return apiRequest(`/favorites/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
-  });
+  return apiRequest(`/favorites/${id}`, { method: "DELETE" });
 }

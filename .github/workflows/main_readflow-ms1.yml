@@ -26,17 +26,15 @@ jobs:
           cd microservicios/ms1-springboot
           mvn clean package -DskipTests
 
+      - name: Prepare deployment
+        run: |
+          cd microservicios/ms1-springboot
+          # Renombrar JAR a app.jar para que Azure lo encuentre fácilmente
+          mv target/*.jar target/app.jar
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: readflow-ms1
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_MS1 }}
-          package: microservicios/ms1-springboot/target/*.jar
-
-      - name: Configure startup command
-        uses: azure/CLI@v2
-        with:
-          azcliversion: latest
-          inlineScript: |
-            az webapp config set --resource-group readflow-rg --name readflow-ms1 \
-              --startup-file "cd /home/site/wwwroot && java -Dserver.port=8080 -jar app.jar"
+          package: microservicios/ms1-springboot/target/app.jar

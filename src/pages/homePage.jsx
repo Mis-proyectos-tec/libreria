@@ -9,27 +9,31 @@ import { useAppData } from "../context/appDataContext.jsx";
 export default function HomePage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, favorites, loading, error } = useAppData();
-
-  function getProgressKey(bookId) {
-    return `reading-progress-${currentUser?.id}-${bookId}`;
-  }
-
-  function getLocalProgress(bookId) {
-    const saved = localStorage.getItem(getProgressKey(bookId));
-    if (!saved) return null;
-    try { return JSON.parse(saved); } catch { return null; }
-  }
+  const { books, favorites, readingProgress, loading, error } = useAppData();
 
   const userBooks = useMemo(() => {
     if (!currentUser) return [];
     return books.filter((book) => String(book.userId) === String(currentUser.id));
   }, [books, currentUser]);
 
+  const misBibliotecaLibros = useMemo(() => {
+    if (!currentUser) return [];
+    // Mis libros + libros guardados de otros
+    const misPropios = books.filter((book) => String(book.userId) === String(currentUser.id));
+    const guardados = books.filter((book) =>
+      favorites.some((f) => String(f.bookId) === String(book.id) && String(f.userId) === String(currentUser.id)) &&
+      String(book.userId) !== String(currentUser.id)
+    );
+    return [...misPropios, ...guardados];
+  }, [books, favorites, currentUser]);
+
   const continueReadingBooks = useMemo(() => {
-    return userBooks
+    if (!currentUser || !readingProgress) return [];
+    return books
       .map((book) => {
-        const progress = getLocalProgress(book.id);
+        const progress = readingProgress.find(
+          (p) => String(p.userId) === String(currentUser.id) && String(p.bookId) === String(book.id)
+        );
         if (!progress) return null;
         return {
           ...book,
@@ -40,7 +44,7 @@ export default function HomePage() {
       })
       .filter(Boolean)
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  }, [userBooks]);
+  }, [books, readingProgress, currentUser]);
 
   function getFavoriteKey() { return `favorites-${currentUser?.id}`; }
 
@@ -137,28 +141,36 @@ export default function HomePage() {
 
       <section className="sectionBlock">
         <div className="sectionHeader">
-          <h2>Libros guardados</h2>
-          {misRegistrosFavoritos.length > 0 && (
+          <h2>Mi biblioteca</h2>
+          <span style={{ color: "var(--muted)", fontSize: "0.88rem" }}>
+            {misBibliotecaLibros.length} {misBibliotecaLibros.length === 1 ? "libro" : "libros"}
+          </span>
+          {misBibliotecaLibros.length > 0 && (
             <button className="secondaryButton" onClick={() => navigate("/biblioteca")}>
               Ver todo
             </button>
           )}
         </div>
 
-        {misRegistrosFavoritos.length === 0 ? (
+        {misBibliotecaLibros.length === 0 ? (
           <EmptyState
-            icon="♡"
-            title="Sin libros guardados"
-            text="Explora la comunidad y guarda libros de otros usuarios."
+            icon="📚"
+            title="Biblioteca vacía"
+            text="Sube tus primeros libros o explora y guarda los de otros usuarios."
             action={
-              <button className="primaryButton" onClick={() => navigate("/explorar-libros")}>
-                Explorar libros
-              </button>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+                <button className="primaryButton" onClick={() => navigate("/nuevo-libro")}>
+                  Subir libro
+                </button>
+                <button className="secondaryButton" onClick={() => navigate("/explorar-libros")}>
+                  Explorar
+                </button>
+              </div>
             }
           />
         ) : (
           <div className="booksGrid">
-            {misRegistrosFavoritos.map((book) => (
+            {misBibliotecaLibros.slice(0, 6).map((book) => (
               <div
                 key={book.id}
                 onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}

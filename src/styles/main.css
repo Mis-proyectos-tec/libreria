@@ -1564,6 +1564,17 @@ body.darkMode .authDecorPanel {
   margin: 0;
 }
 
+.explorCardDescription {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 6px 0 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .explorCardUploader {
   font-size: 0.78rem;
   color: var(--muted);

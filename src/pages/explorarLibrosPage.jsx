@@ -167,7 +167,12 @@ export default function ExplorarLibrosPage() {
                 />
                 <div className="explorCardBody">
                   <h3 className="explorCardTitle">{book.title || "Libro sin título"}</h3>
-                  <p className="explorCardAuthor">{book.author || "Autor desconocido"}</p>
+                  <p className="explorCardAuthor">
+                    <strong>Autor:</strong> {book.author || "Autor desconocido"}
+                  </p>
+                  {book.description && (
+                    <p className="explorCardDescription">{book.description}</p>
+                  )}
                   <p className="explorCardUploader">
                     Subido por <strong>{getUploaderName(book)}</strong>
                   </p>

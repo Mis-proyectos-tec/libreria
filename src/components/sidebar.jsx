@@ -13,7 +13,6 @@ export default function Sidebar() {
         <NavLink to="/biblioteca">Biblioteca</NavLink>
         <NavLink to="/lectura">Lectura</NavLink>
         <NavLink to="/admin-libros">Administrar libros</NavLink>
-        <NavLink to="/configuracion">Configuración</NavLink>
       </nav>
     </aside>
   );

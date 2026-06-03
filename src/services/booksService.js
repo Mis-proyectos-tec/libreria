@@ -27,18 +27,12 @@ async function apiRequest(endpoint, options = {}) {
 export function getUsers() {
   return apiRequest("/users", {
     method: "GET",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
   });
 }
 
 export function getUserById(id) {
   return apiRequest(`/users/${id}`, {
     method: "GET",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
   });
 }
 
@@ -59,14 +53,11 @@ export function updateUser(id, user) {
 export function deleteUser(id) {
   return apiRequest(`/users/${id}`, {
     method: "DELETE",
-    headers: {
-      "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-    },
   });
 }
 
 /* CATEGORIES */
-/* CATEGORIES - TEMPORAL */
+/* CATEGORIES - Mock data (hardcoded, not connected to API) */
 export async function getCategories() {
   return [
     { id: 1, name: "General" },

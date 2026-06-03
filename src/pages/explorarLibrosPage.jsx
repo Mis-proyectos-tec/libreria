@@ -174,7 +174,16 @@ export default function ExplorarLibrosPage() {
                     <p className="explorCardDescription">{book.description}</p>
                   )}
                   <p className="explorCardUploader">
-                    Subido por <strong>{getUploaderName(book)}</strong>
+                    Subido por{" "}
+                    <button
+                      className="explorCardUploaderLink"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate("/perfil-usuario", { state: { usuarioId: book.userId || book.user_id } });
+                      }}
+                    >
+                      <strong>{getUploaderName(book)}</strong>
+                    </button>
                   </p>
                   {isEnBiblioteca(book.id) && (
                     <span className="explorCardBadge">✓ En tu biblioteca</span>

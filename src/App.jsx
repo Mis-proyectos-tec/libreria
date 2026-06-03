@@ -8,6 +8,7 @@ import RegistroPage from "./pages/registroPage.jsx";
 import BibliotecaPage from "./pages/bibliotecaPage.jsx";
 import FavoritosPage from "./pages/favoritosPage.jsx";
 import PerfilPage from "./pages/perfilPage.jsx";
+import PerfilUsuarioPage from "./pages/perfilUsuarioPage.jsx";
 import DetalleLibroPage from "./pages/detalleLibroPage.jsx";
 import LecturaPage from "./pages/lecturaPage.jsx";
 import AdminLibrosPage from "./pages/adminLibrosPage.jsx";
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/explorar-libros" element={<ExplorarLibrosPage />} />
         <Route path="/favoritos"       element={<FavoritosPage />} />
         <Route path="/perfil"          element={<PerfilPage />} />
+        <Route path="/perfil-usuario"  element={<PerfilUsuarioPage />} />
         <Route path="/detalle-libro"   element={<DetalleLibroPage />} />
         <Route path="/lectura"         element={<LecturaPage />} />
         <Route path="/admin-libros"    element={<AdminLibrosPage />} />

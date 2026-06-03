@@ -9,7 +9,7 @@ import { useAppData } from "../context/appDataContext.jsx";
 export default function HomePage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, loading, error } = useAppData();
+  const { books, favorites, loading, error } = useAppData();
 
   function getProgressKey(bookId) {
     return `reading-progress-${currentUser?.id}-${bookId}`;
@@ -49,11 +49,15 @@ export default function HomePage() {
     return saved ? JSON.parse(saved) : [];
   }
 
-  const favoriteIds = getFavorites();
-
-  const favoriteBooks = useMemo(() => {
-    return userBooks.filter((book) => favoriteIds.includes(book.id));
-  }, [userBooks]);
+  const misRegistrosFavoritos = useMemo(() => {
+    if (!currentUser) return [];
+    // Solo los favoritos que son libros de OTROS (no mis propios libros)
+    return books
+      .filter((book) =>
+        favorites.some((f) => String(f.bookId) === String(book.id) && String(f.userId) === String(currentUser.id))
+      )
+      .filter((book) => String(book.userId) !== String(currentUser.id));
+  }, [books, favorites, currentUser]);
 
   if (!currentUser) return <p>Debes iniciar sesión.</p>;
   if (loading) return <p style={{ color: "var(--muted)" }}>Cargando...</p>;
@@ -86,7 +90,7 @@ export default function HomePage() {
       <div className="statCardsRow">
         <StatCard icon="📚" value={userBooks.length} label="Libros" />
         <StatCard icon="📖" value={continueReadingBooks.length} label="Leyendo" />
-        <StatCard icon="♡" value={favoriteBooks.length} label="Favoritos" />
+        <StatCard icon="♡" value={misRegistrosFavoritos.length} label="Guardados" />
       </div>
 
       <section className="sectionBlock">
@@ -133,23 +137,28 @@ export default function HomePage() {
 
       <section className="sectionBlock">
         <div className="sectionHeader">
-          <h2>Favoritos</h2>
-          {favoriteBooks.length > 0 && (
-            <button className="secondaryButton" onClick={() => navigate("/favoritos")}>
+          <h2>Libros guardados</h2>
+          {misRegistrosFavoritos.length > 0 && (
+            <button className="secondaryButton" onClick={() => navigate("/biblioteca")}>
               Ver todo
             </button>
           )}
         </div>
 
-        {favoriteBooks.length === 0 ? (
+        {misRegistrosFavoritos.length === 0 ? (
           <EmptyState
             icon="♡"
-            title="Sin favoritos"
-            text="Marca libros como favoritos desde su detalle."
+            title="Sin libros guardados"
+            text="Explora la comunidad y guarda libros de otros usuarios."
+            action={
+              <button className="primaryButton" onClick={() => navigate("/explorar-libros")}>
+                Explorar libros
+              </button>
+            }
           />
         ) : (
           <div className="booksGrid">
-            {favoriteBooks.map((book) => (
+            {misRegistrosFavoritos.map((book) => (
               <div
                 key={book.id}
                 onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}

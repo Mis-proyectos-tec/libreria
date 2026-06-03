@@ -56,9 +56,6 @@ export default function Sidebar() {
         <NavLink to="/explorar-libros" className={linkClass}>
           <span className="sidebarIcon">◎</span> Explorar
         </NavLink>
-        <NavLink to="/favoritos"       className={linkClass}>
-          <span className="sidebarIcon">♡</span> Favoritos
-        </NavLink>
         <NavLink to="/perfil"          className={linkClass}>
           <span className="sidebarIcon">◯</span> Perfil
         </NavLink>

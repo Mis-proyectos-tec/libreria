@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
-import { getBookCoverUrl } from "../services/booksService.js";
+import { createFavorite, deleteFavorite, getBookCoverUrl } from "../services/booksService.js";
 import EmptyState from "../components/EmptyState.jsx";
 
 export default function ExplorarLibrosPage() {
   const navigate = useNavigate();
-  const { books, users, loading, error } = useAppData();
+  const { currentUser } = useAuth();
+  const { books, users, favorites, loading, error, reloadAppData } = useAppData();
 
   const [coverUrls, setCoverUrls] = useState({});
+  const [loadingBib, setLoadingBib] = useState({});
 
   const librosPublicos = useMemo(() => {
     return books.filter((book) => {
@@ -17,6 +20,22 @@ export default function ExplorarLibrosPage() {
       return isPublic && status === "activo";
     });
   }, [books]);
+
+  const misRegistrosFavoritos = useMemo(() => {
+    return favorites.filter((f) => String(f.userId) === String(currentUser?.id));
+  }, [favorites, currentUser?.id]);
+
+  const librosDeOtros = useMemo(() => {
+    return librosPublicos.filter((b) => String(b.userId) !== String(currentUser?.id));
+  }, [librosPublicos, currentUser?.id]);
+
+  const misPublicaciones = useMemo(() => {
+    return librosPublicos.filter((b) => String(b.userId) === String(currentUser?.id));
+  }, [librosPublicos, currentUser?.id]);
+
+  const isEnBiblioteca = (bookId) => {
+    return misRegistrosFavoritos.some((f) => String(f.bookId) === String(bookId));
+  };
 
   useEffect(() => {
     async function loadCoverUrls() {
@@ -45,19 +64,34 @@ export default function ExplorarLibrosPage() {
     return user.name || user.fullName || user.username || user.email || "Usuario";
   }
 
-  function openBookDetail(book) {
-    navigate("/detalle-libro", { state: { libroId: book.id } });
-  }
-
   function getCoverImage(book) {
     return coverUrls[book.id] || book.coverUrl || "/assets/defaultBook.png";
+  }
+
+  async function toggleBiblioteca(book) {
+    setLoadingBib((prev) => ({ ...prev, [book.id]: true }));
+    try {
+      const registro = misRegistrosFavoritos.find(
+        (f) => String(f.bookId) === String(book.id)
+      );
+      if (registro) {
+        await deleteFavorite(registro.id);
+      } else {
+        await createFavorite({ userId: currentUser.id, bookId: book.id });
+      }
+      await reloadAppData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingBib((prev) => ({ ...prev, [book.id]: false }));
+    }
   }
 
   if (loading) return <p style={{ color: "var(--muted)" }}>Cargando libros...</p>;
   if (error) return <p className="unsavedWarning">{error}</p>;
 
   return (
-    <section className="homePage">
+    <section className="explorarPage">
 
       <div className="heroSection">
         <div className="heroContent">
@@ -69,45 +103,102 @@ export default function ExplorarLibrosPage() {
         </div>
       </div>
 
+      {/* Sección: De la comunidad */}
       <div className="sectionBlock">
         <div className="sectionHeader">
-          <h2>Libros disponibles</h2>
+          <h2>De la comunidad</h2>
           <span style={{ color: "var(--muted)", fontSize: "0.88rem" }}>
-            {librosPublicos.length} {librosPublicos.length === 1 ? "libro" : "libros"}
+            {librosDeOtros.length} {librosDeOtros.length === 1 ? "libro" : "libros"}
           </span>
         </div>
 
-        {librosPublicos.length === 0 ? (
+        {librosDeOtros.length === 0 ? (
           <EmptyState
             icon="◎"
-            title="Sin libros publicados"
-            text="Todavía no hay libros públicos. Sé el primero en subir uno."
+            title="Sin libros de la comunidad"
+            text="Todavía no hay libros públicos de otros usuarios."
           />
         ) : (
           <div className="booksGrid">
-            {librosPublicos.map((book) => (
-              <article
-                key={book.id}
-                className="bookCard"
-                onClick={() => openBookDetail(book)}
-              >
+            {librosDeOtros.map((book) => (
+              <article key={book.id} className="explorCard">
                 <img
                   src={getCoverImage(book)}
                   alt={book.title || "Portada del libro"}
-                  className="bookCardImage"
+                  className="explorCardImage"
                 />
-                <div className="bookCardBody">
-                  <h3 className="bookCardTitle">{book.title || "Libro sin título"}</h3>
-                  <p className="bookCardAuthor">{book.author || "Autor desconocido"}</p>
-                  <p style={{ fontSize: "0.76rem", color: "var(--muted)", margin: "4px 0 0" }}>
-                    {getUploaderName(book)}
+                <div className="explorCardBody">
+                  <h3 className="explorCardTitle">{book.title || "Libro sin título"}</h3>
+                  <p className="explorCardAuthor">{book.author || "Autor desconocido"}</p>
+                  <p className="explorCardUploader">
+                    Subido por <strong>{getUploaderName(book)}</strong>
                   </p>
+                  {isEnBiblioteca(book.id) && (
+                    <span className="explorCardBadge">✓ En tu biblioteca</span>
+                  )}
+                </div>
+                <div className="explorCardActions">
+                  <button
+                    className="secondaryButton"
+                    onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}
+                  >
+                    Ver detalle
+                  </button>
+                  <button
+                    className={isEnBiblioteca(book.id) ? "secondaryButton" : "primaryButton"}
+                    onClick={() => toggleBiblioteca(book)}
+                    disabled={loadingBib[book.id]}
+                  >
+                    {loadingBib[book.id]
+                      ? "..."
+                      : isEnBiblioteca(book.id)
+                      ? "Quitar"
+                      : "Agregar"}
+                  </button>
                 </div>
               </article>
             ))}
           </div>
         )}
       </div>
+
+      {/* Sección: Mis publicaciones */}
+      {misPublicaciones.length > 0 && (
+        <div className="sectionBlock">
+          <div className="sectionHeader">
+            <h2>Mis publicaciones</h2>
+            <span style={{ color: "var(--muted)", fontSize: "0.88rem" }}>
+              {misPublicaciones.length} {misPublicaciones.length === 1 ? "libro" : "libros"}
+            </span>
+          </div>
+
+          <div className="booksGrid">
+            {misPublicaciones.map((book) => (
+              <article key={book.id} className="explorCard">
+                <img
+                  src={getCoverImage(book)}
+                  alt={book.title || "Portada del libro"}
+                  className="explorCardImage"
+                />
+                <div className="explorCardBody">
+                  <h3 className="explorCardTitle">{book.title || "Libro sin título"}</h3>
+                  <p className="explorCardAuthor">{book.author || "Autor desconocido"}</p>
+                  <span className="explorCardBadge explorCardBadgeYours">Tuyo</span>
+                </div>
+                <div className="explorCardActions">
+                  <button
+                    className="primaryButton"
+                    onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}
+                    style={{ flex: 1 }}
+                  >
+                    Ver en biblioteca
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
 
     </section>
   );

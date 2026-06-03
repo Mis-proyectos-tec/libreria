@@ -8,7 +8,7 @@ import EmptyState from "../components/EmptyState.jsx";
 export default function AdminLibrosPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, loading, error, reloadAppData } = useAppData();
+  const { books, readingProgress, loading, error, reloadAppData } = useAppData();
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -24,6 +24,12 @@ export default function AdminLibrosPage() {
       );
     });
   }, [librosUsuario, searchTerm]);
+
+  function hasReadingProgress(bookId) {
+    return readingProgress?.some(
+      (p) => String(p.userId) === String(currentUser?.id) && String(p.bookId) === String(bookId)
+    ) || false;
+  }
 
   async function handleDelete(id) {
     const confirmDelete = window.confirm("¿Deseas eliminar este libro?");
@@ -88,6 +94,7 @@ export default function AdminLibrosPage() {
                 <th>Autor</th>
                 <th>Categoría</th>
                 <th>Páginas</th>
+                <th>Lectura</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -98,6 +105,15 @@ export default function AdminLibrosPage() {
                   <td style={{ color: "var(--muted)" }}>{book.author}</td>
                   <td>{book.category}</td>
                   <td>{book.totalPages}</td>
+                  <td>
+                    <button
+                      className="primaryButton"
+                      onClick={() => navigate("/lectura", { state: { libroId: book.id } })}
+                      style={{ fontSize: "0.85rem", padding: "6px 10px" }}
+                    >
+                      {hasReadingProgress(book.id) ? "Seguir" : "Empezar"}
+                    </button>
+                  </td>
                   <td>
                     <div className="tableActions">
                       <button

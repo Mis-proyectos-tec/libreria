@@ -84,7 +84,6 @@ export default function AdminLibrosPage() {
           <table className="booksTable">
             <thead>
               <tr>
-                <th>Portada</th>
                 <th>Título</th>
                 <th>Autor</th>
                 <th>Categoría</th>
@@ -95,13 +94,6 @@ export default function AdminLibrosPage() {
             <tbody>
               {filteredBooks.map((book) => (
                 <tr key={book.id}>
-                  <td>
-                    <img
-                      src={book.coverUrl || "/assets/defaultBook.png"}
-                      alt={book.title}
-                      className="tableBookImage"
-                    />
-                  </td>
                   <td style={{ fontWeight: 500 }}>{book.title}</td>
                   <td style={{ color: "var(--muted)" }}>{book.author}</td>
                   <td>{book.category}</td>

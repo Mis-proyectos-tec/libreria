@@ -103,6 +103,44 @@ export default function ExplorarLibrosPage() {
         </div>
       </div>
 
+      {/* Sección: Subidos por mí */}
+      {misPublicaciones.length > 0 && (
+        <div className="sectionBlock">
+          <div className="sectionHeader">
+            <h2>Subidos por mí</h2>
+            <span style={{ color: "var(--muted)", fontSize: "0.88rem" }}>
+              {misPublicaciones.length} {misPublicaciones.length === 1 ? "libro" : "libros"}
+            </span>
+          </div>
+
+          <div className="booksGrid">
+            {misPublicaciones.map((book) => (
+              <article key={book.id} className="explorCard">
+                <img
+                  src={getCoverImage(book)}
+                  alt={book.title || "Portada del libro"}
+                  className="explorCardImage"
+                />
+                <div className="explorCardBody">
+                  <h3 className="explorCardTitle">{book.title || "Libro sin título"}</h3>
+                  <p className="explorCardAuthor">{book.author || "Autor desconocido"}</p>
+                  <span className="explorCardBadge explorCardBadgeYours">Tuyo</span>
+                </div>
+                <div className="explorCardActions">
+                  <button
+                    className="primaryButton"
+                    onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}
+                    style={{ flex: 1 }}
+                  >
+                    Ver en biblioteca
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Sección: De la comunidad */}
       <div className="sectionBlock">
         <div className="sectionHeader">
@@ -153,7 +191,7 @@ export default function ExplorarLibrosPage() {
                       ? "..."
                       : isEnBiblioteca(book.id)
                       ? "Quitar"
-                      : "Agregar"}
+                      : "Agregar a mi biblioteca"}
                   </button>
                 </div>
               </article>
@@ -161,44 +199,6 @@ export default function ExplorarLibrosPage() {
           </div>
         )}
       </div>
-
-      {/* Sección: Mis publicaciones */}
-      {misPublicaciones.length > 0 && (
-        <div className="sectionBlock">
-          <div className="sectionHeader">
-            <h2>Mis publicaciones</h2>
-            <span style={{ color: "var(--muted)", fontSize: "0.88rem" }}>
-              {misPublicaciones.length} {misPublicaciones.length === 1 ? "libro" : "libros"}
-            </span>
-          </div>
-
-          <div className="booksGrid">
-            {misPublicaciones.map((book) => (
-              <article key={book.id} className="explorCard">
-                <img
-                  src={getCoverImage(book)}
-                  alt={book.title || "Portada del libro"}
-                  className="explorCardImage"
-                />
-                <div className="explorCardBody">
-                  <h3 className="explorCardTitle">{book.title || "Libro sin título"}</h3>
-                  <p className="explorCardAuthor">{book.author || "Autor desconocido"}</p>
-                  <span className="explorCardBadge explorCardBadgeYours">Tuyo</span>
-                </div>
-                <div className="explorCardActions">
-                  <button
-                    className="primaryButton"
-                    onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}
-                    style={{ flex: 1 }}
-                  >
-                    Ver en biblioteca
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
 
     </section>
   );

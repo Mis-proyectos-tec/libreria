@@ -35,7 +35,7 @@ export function AppDataProvider({ children }) {
 
       const val = (r) => (r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []);
 
-      // Normalizar libros: asegurar que tengan userId consistente
+      // Normalizar campos: asegurar consistencia en IDs
       const normalizeBooks = (booksArray) => {
         return booksArray.map((book) => ({
           ...book,
@@ -43,11 +43,27 @@ export function AppDataProvider({ children }) {
         }));
       };
 
+      const normalizeProgress = (progressArray) => {
+        return progressArray.map((p) => ({
+          ...p,
+          userId: p.userId || p.user_id,
+          bookId: p.bookId || p.book_id,
+        }));
+      };
+
+      const normalizeFavorites = (favArray) => {
+        return favArray.map((f) => ({
+          ...f,
+          userId: f.userId || f.user_id,
+          bookId: f.bookId || f.book_id,
+        }));
+      };
+
       setUsers(val(usersRes));
       setCategories(val(categoriesRes));
       setBooks(normalizeBooks(val(booksRes)));
-      setReadingProgress(val(progressRes));
-      setFavorites(val(favoritesRes));
+      setReadingProgress(normalizeProgress(val(progressRes)));
+      setFavorites(normalizeFavorites(val(favoritesRes)));
     } catch (err) {
       console.error(err);
       setError("No se pudo cargar la información de la app.");

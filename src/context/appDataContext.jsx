@@ -35,9 +35,17 @@ export function AppDataProvider({ children }) {
 
       const val = (r) => (r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []);
 
+      // Normalizar libros: asegurar que tengan userId consistente
+      const normalizeBooks = (booksArray) => {
+        return booksArray.map((book) => ({
+          ...book,
+          userId: book.userId || book.user_id,
+        }));
+      };
+
       setUsers(val(usersRes));
       setCategories(val(categoriesRes));
-      setBooks(val(booksRes));
+      setBooks(normalizeBooks(val(booksRes)));
       setReadingProgress(val(progressRes));
       setFavorites(val(favoritesRes));
     } catch (err) {

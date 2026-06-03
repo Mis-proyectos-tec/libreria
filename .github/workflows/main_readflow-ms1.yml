@@ -32,3 +32,11 @@ jobs:
           app-name: readflow-ms1
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_MS1 }}
           package: microservicios/ms1-springboot/target/*.jar
+
+      - name: Configure startup command
+        uses: azure/CLI@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az webapp config set --resource-group readflow-rg --name readflow-ms1 \
+              --startup-file "cd /home/site/wwwroot && java -Dserver.port=8080 -jar app.jar"

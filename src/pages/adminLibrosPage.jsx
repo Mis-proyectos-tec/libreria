@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { deleteBook } from "../services/booksService.js";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 
 export default function AdminLibrosPage() {
   const navigate = useNavigate();
@@ -27,7 +28,6 @@ export default function AdminLibrosPage() {
   async function handleDelete(id) {
     const confirmDelete = window.confirm("¿Deseas eliminar este libro?");
     if (!confirmDelete) return;
-
     try {
       await deleteBook(id);
       await reloadAppData();
@@ -38,21 +38,20 @@ export default function AdminLibrosPage() {
   }
 
   if (!currentUser) return <p>Debes iniciar sesión.</p>;
-  if (loading) return <p>Cargando administración...</p>;
-  if (error) return <p>{error}</p>;
+  if (loading) return <p style={{ color: "var(--muted)" }}>Cargando...</p>;
+  if (error) return <p className="unsavedWarning">{error}</p>;
 
   return (
     <section className="adminPage">
+
       <div className="adminHeader">
         <div>
-          <h1>Administrar libros</h1>
-          <p>Gestiona los libros asociados a tu cuenta.</p>
+          <h1 style={{ margin: 0 }}>Mis libros</h1>
+          <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>
+            {librosUsuario.length} {librosUsuario.length === 1 ? "libro" : "libros"} en tu cuenta
+          </p>
         </div>
-
-        <button
-          className="primaryButton"
-          onClick={() => navigate("/nuevo-libro")}
-        >
+        <button className="primaryButton" onClick={() => navigate("/nuevo-libro")}>
           + Nuevo libro
         </button>
       </div>
@@ -67,61 +66,69 @@ export default function AdminLibrosPage() {
         />
       </div>
 
-      <div className="tableContainer">
-        <table className="booksTable">
-          <thead>
-            <tr>
-              <th>Portada</th>
-              <th>Título</th>
-              <th>Autor</th>
-              <th>Categoría</th>
-              <th>Páginas</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBooks.map((book) => (
-              <tr key={book.id}>
-                <td>
-                  <img
-                    src={book.coverUrl || "/assets/defaultBook.png"}
-                    alt={book.title}
-                    className="tableBookImage"
-                  />
-                </td>
-                <td>{book.title}</td>
-                <td>{book.author}</td>
-                <td>{book.category}</td>
-                <td>{book.totalPages}</td>
-                <td>
-                  <div className="tableActions">
-                    <button
-                      className="editButton"
-                      onClick={() =>
-                        navigate("/editar-libro", { state: { libroId: book.id } })
-                      }
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="deleteButton"
-                      onClick={() => handleDelete(book.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-
-            {filteredBooks.length === 0 && (
+      {filteredBooks.length === 0 ? (
+        <EmptyState
+          icon="✎"
+          title={searchTerm ? "Sin resultados" : "Sin libros"}
+          text={searchTerm ? "Prueba con otro término." : "Sube tu primer libro para verlo aquí."}
+          action={
+            !searchTerm && (
+              <button className="primaryButton" onClick={() => navigate("/nuevo-libro")}>
+                Subir libro
+              </button>
+            )
+          }
+        />
+      ) : (
+        <div className="tableContainer">
+          <table className="booksTable">
+            <thead>
               <tr>
-                <td colSpan="6">No tienes libros registrados.</td>
+                <th>Portada</th>
+                <th>Título</th>
+                <th>Autor</th>
+                <th>Categoría</th>
+                <th>Páginas</th>
+                <th>Acciones</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filteredBooks.map((book) => (
+                <tr key={book.id}>
+                  <td>
+                    <img
+                      src={book.coverUrl || "/assets/defaultBook.png"}
+                      alt={book.title}
+                      className="tableBookImage"
+                    />
+                  </td>
+                  <td style={{ fontWeight: 500 }}>{book.title}</td>
+                  <td style={{ color: "var(--muted)" }}>{book.author}</td>
+                  <td>{book.category}</td>
+                  <td>{book.totalPages}</td>
+                  <td>
+                    <div className="tableActions">
+                      <button
+                        className="editButton"
+                        onClick={() => navigate("/editar-libro", { state: { libroId: book.id } })}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="deleteButton"
+                        onClick={() => handleDelete(book.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
     </section>
   );
 }

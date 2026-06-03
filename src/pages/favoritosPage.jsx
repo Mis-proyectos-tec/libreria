@@ -4,6 +4,7 @@ import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
 import { deleteFavorite } from "../services/booksService.js";
 import BookCard from "../components/bookCard.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 
 export default function FavoritosPage() {
   const navigate = useNavigate();
@@ -33,8 +34,8 @@ export default function FavoritosPage() {
     }
   }
 
-  if (loading) return <p>Cargando favoritos...</p>;
-  if (error) return <p>{error}</p>;
+  if (loading) return <p style={{ color: "var(--muted)" }}>Cargando favoritos...</p>;
+  if (error) return <p className="unsavedWarning">{error}</p>;
 
   return (
     <section className="sectionBlock">
@@ -43,15 +44,22 @@ export default function FavoritosPage() {
       </div>
 
       {favoritos.length === 0 ? (
-        <p>No tienes libros en favoritos.</p>
+        <EmptyState
+          icon="♡"
+          title="Sin favoritos"
+          text="Marca libros como favoritos desde la página de detalle del libro."
+          action={
+            <button className="secondaryButton" onClick={() => navigate("/biblioteca")}>
+              Ver mi biblioteca
+            </button>
+          }
+        />
       ) : (
         <div className="booksGrid">
           {favoritos.map((book) => (
             <div key={book.id} className="favoriteCardWrapper">
               <div
-                onClick={() =>
-                  navigate("/detalle-libro", { state: { libroId: book.id } })
-                }
+                onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}
                 style={{ cursor: "pointer" }}
               >
                 <BookCard
@@ -60,11 +68,7 @@ export default function FavoritosPage() {
                   portada={book.coverUrl || "/assets/defaultBook.png"}
                 />
               </div>
-
-              <button
-                className="dangerButton"
-                onClick={() => quitarFavorito(book.id)}
-              >
+              <button className="dangerButton" onClick={() => quitarFavorito(book.id)}>
                 Quitar de favoritos
               </button>
             </div>

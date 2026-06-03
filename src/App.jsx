@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
-import Navbar from "./components/navBar.jsx";
+import MainLayout from "./layout/mainLayout.jsx";
 
 import HomePage from "./pages/homePage.jsx";
 import LoginPage from "./pages/loginPage.jsx";
@@ -17,143 +17,39 @@ import ExplorarLibrosPage from "./pages/explorarLibrosPage.jsx";
 import { useAuth } from "./context/authContext.jsx";
 
 export default function App() {
-
   const { isAuthenticated } = useAuth();
 
-
   return (
-    <div className="appShell">
+    <Routes>
 
-      {/* navbar solo si hay usuario logueado */}
-      {isAuthenticated && <Navbar />}
+      {/* Rutas públicas — sin layout */}
+      <Route
+        path="/"
+        element={isAuthenticated ? <Navigate to="/home" /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/home" /> : <LoginPage />}
+      />
+      <Route
+        path="/registro"
+        element={isAuthenticated ? <Navigate to="/home" /> : <RegistroPage />}
+      />
 
-      <main className="mainContent">
+      {/* Rutas protegidas — con MainLayout como wrapper */}
+      <Route element={isAuthenticated ? <MainLayout /> : <Navigate to="/login" />}>
+        <Route path="/home"            element={<HomePage />} />
+        <Route path="/biblioteca"      element={<BibliotecaPage />} />
+        <Route path="/explorar-libros" element={<ExplorarLibrosPage />} />
+        <Route path="/favoritos"       element={<FavoritosPage />} />
+        <Route path="/perfil"          element={<PerfilPage />} />
+        <Route path="/detalle-libro"   element={<DetalleLibroPage />} />
+        <Route path="/lectura"         element={<LecturaPage />} />
+        <Route path="/admin-libros"    element={<AdminLibrosPage />} />
+        <Route path="/nuevo-libro"     element={<FormLibroPage />} />
+        <Route path="/editar-libro"    element={<FormLibroPage />} />
+      </Route>
 
-        <Routes>
-
-          {/* ruta inicial */}
-          <Route
-            path="/"
-            element={
-              isAuthenticated
-                ? <Navigate to="/home" />
-                : <Navigate to="/login" />
-            }
-          />
-
-          {/* login */}
-          <Route
-            path="/login"
-            element={isAuthenticated ? <Navigate to="/home" /> : <LoginPage />}
-          />
-
-          {/* registro */}
-          <Route
-            path="/registro"
-            element={isAuthenticated ? <Navigate to="/home" /> : <RegistroPage />}
-          />
-
-          {/* home */}
-          <Route
-            path="/home"
-            element={
-              isAuthenticated
-                ? <HomePage />
-                : <Navigate to="/login" />
-            }
-          />
-
-          {/* biblioteca */}
-          <Route
-            path="/biblioteca"
-            element={
-              isAuthenticated
-                ? <BibliotecaPage />
-                : <Navigate to="/login" />
-            }
-          />
-          {/* explorar libros publicados */}
-          <Route
-            path="/explorar-libros"
-            element={
-              isAuthenticated
-                ? <ExplorarLibrosPage />
-                : <Navigate to="/login" />
-            }
-          />
-
-          {/* favoritos */}
-          <Route
-            path="/favoritos"
-            element={
-              isAuthenticated
-                ? <FavoritosPage />
-                : <Navigate to="/login" />
-            }
-          />
-
-          {/* perfil usuario */}
-          <Route
-            path="/perfil"
-            element={
-              isAuthenticated
-                ? <PerfilPage />
-                : <Navigate to="/login" />
-            }
-          />
-
-          {/* detalle libro */}
-          <Route
-            path="/detalle-libro"
-            element={
-              isAuthenticated
-                ? <DetalleLibroPage />
-                : <Navigate to="/login" />
-            }
-          />
-
-          {/* lector pdf */}
-          <Route
-            path="/lectura"
-            element={
-              isAuthenticated
-                ? <LecturaPage />
-                : <Navigate to="/login" />
-            }
-          />
-
-          {/* admin libros */}
-          <Route
-            path="/admin-libros"
-            element={
-              isAuthenticated
-                ? <AdminLibrosPage />
-                : <Navigate to="/login" />
-            }
-          />
-
-          {/* nuevo / editar libro */}
-          <Route
-            path="/nuevo-libro"
-            element={
-              isAuthenticated
-                ? <FormLibroPage />
-                : <Navigate to="/login" />
-            }
-          />
-          <Route
-            path="/editar-libro"
-            element={
-              isAuthenticated
-                ? <FormLibroPage />
-                : <Navigate to="/login" />
-            }
-          />
-
-        </Routes>
-
-      </main>
-
-    </div>
+    </Routes>
   );
 }

@@ -6,13 +6,7 @@ export default function RegistroPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  const [formData, setFormData] = useState({
-    name: "",
-    username: "",
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ name: "", username: "", email: "", password: "" });
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -45,75 +39,82 @@ export default function RegistroPage() {
   }
 
   return (
-    <section className="authPage">
-      <div className="authCard">
-        <h1>Crear cuenta</h1>
-        <p>Regístrate para guardar, leer y administrar tus libros.</p>
+    <div className="authLayout">
 
-        <form className="authForm" onSubmit={handleSubmit}>
-          <div className="formGroup">
-            <label htmlFor="name">Nombre completo</label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="Tu nombre completo"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="formGroup">
-            <label htmlFor="username">Nombre de usuario</label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              placeholder="Ej: juanperez"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="formGroup">
-            <label htmlFor="email">Correo electrónico</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="correo@ejemplo.com"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="formGroup">
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Mínimo 6 caracteres"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          {errorMessage && <p className="unsavedWarning">{errorMessage}</p>}
-
-          <button type="submit" className="primaryButton authButton" disabled={loading}>
-            {loading ? "Creando cuenta..." : "Registrarme"}
-          </button>
-        </form>
-
-        <button className="linkButton" onClick={() => navigate("/login")}>
-          Ya tengo una cuenta
-        </button>
+      <div className="authDecorPanel">
+        <h1 className="authDecorTitle">Biblio-TEC</h1>
+        <div className="authDecorDivider" />
+        <p className="authDecorQuote">
+          "El que lee mucho y anda mucho, ve mucho y sabe mucho."
+        </p>
+        <span className="authDecorSub">Biblioteca Digital TEC</span>
       </div>
-    </section>
+
+      <div className="authPanel">
+        <div className="authCard">
+          <h2>Crear cuenta</h2>
+          <p style={{ color: "var(--muted)", fontSize: "0.9rem", marginTop: "-12px", marginBottom: "20px" }}>
+            Regístrate para guardar y leer tus libros.
+          </p>
+
+          <form className="authForm" onSubmit={handleSubmit}>
+            <div className="formGroup">
+              <label htmlFor="name">Nombre completo</label>
+              <input
+                id="name" name="name" type="text"
+                placeholder="Tu nombre completo"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="formGroup">
+              <label htmlFor="username">Nombre de usuario</label>
+              <input
+                id="username" name="username" type="text"
+                placeholder="Ej: juanperez"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="formGroup">
+              <label htmlFor="email">Correo electrónico</label>
+              <input
+                id="email" name="email" type="email"
+                placeholder="correo@ejemplo.com"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="formGroup">
+              <label htmlFor="password">Contraseña</label>
+              <input
+                id="password" name="password" type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {errorMessage && <p className="unsavedWarning">{errorMessage}</p>}
+
+            <button type="submit" className="primaryButton authButton" disabled={loading} style={{ width: "100%", marginTop: "8px" }}>
+              {loading ? "Creando cuenta..." : "Registrarme"}
+            </button>
+          </form>
+
+          <button className="linkButton" onClick={() => navigate("/login")} style={{ marginTop: "16px" }}>
+            Ya tengo una cuenta
+          </button>
+        </div>
+      </div>
+
+    </div>
   );
 }

@@ -1,20 +1,25 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppData } from "../context/appDataContext.jsx";
 import { useAuth } from "../context/authContext.jsx";
-import { updateBook, createFavorite, deleteFavorite } from "../services/booksService.js";
+import {
+  updateBook,
+  createFavorite,
+  deleteFavorite,
+  getBookCoverUrl,
+} from "../services/booksService.js";
 
 export default function DetalleLibroPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
-  const { books, loading, error, reloadAppData, favorites } = useAppData();
+  const { books, users = [], loading, error, reloadAppData, favorites } = useAppData();
 
   const libroId = location.state?.libroId;
 
-  const book = useMemo(() => {
-    return books.find((item) => String(item.id) === String(libroId)) || null;
-  }, [books, libroId]);
+const book = useMemo(() => {
+  return books.find((item) => String(item.id) === String(libroId)) || null;
+}, [books, libroId]);
 
   const favoritoActual = useMemo(() => {
     if (!book || !currentUser) return null;
@@ -29,6 +34,21 @@ export default function DetalleLibroPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
+
+const uploadedByName = useMemo(() => {
+  if (!book) return "Usuario desconocido";
+
+  const userId = book.userId || book.user_id;
+
+  if (!userId) return "Usuario desconocido";
+
+  const user = users.find((item) => String(item.id) === String(userId));
+
+  if (!user) return `Usuario ${userId}`;
+
+  return user.name || user.fullName || user.username || user.email || `Usuario ${userId}`;
+}, [book, users]);
 
   const [formData, setFormData] = useState({
     title: book?.title || "",
@@ -41,6 +61,47 @@ export default function DetalleLibroPage() {
     coverUrl: book?.coverUrl || "",
     pdfUrl: book?.pdfUrl || "",
   });
+
+  useEffect(() => {
+  if (!book) return;
+
+  setFormData({
+    title: book.title || "",
+    author: book.author || "",
+    category: book.category || "",
+    description: book.description || "",
+    language: book.language || "es",
+    totalPages: book.totalPages || book.total_pages || "",
+    currentStatus: book.currentStatus || book.current_status || "activo",
+    coverUrl: book.coverUrl || "",
+    pdfUrl: book.pdfUrl || "",
+  });
+}, [book]);
+
+useEffect(() => {
+  async function loadCover() {
+    if (!book?.id) return;
+
+    const hasCover = book.cover_blob_name || book.coverBlobName;
+
+    if (!hasCover) {
+      setCoverUrl("");
+      return;
+    }
+
+    try {
+      const response = await getBookCoverUrl(book.id);
+      setCoverUrl(response.coverUrl || "");
+    } catch (err) {
+      console.warn("No se pudo cargar la portada del libro.", err);
+      setCoverUrl("");
+    }
+  }
+
+  loadCover();
+}, [book?.id, book?.cover_blob_name, book?.coverBlobName]);
+
+  
 
   async function toggleFavorito() {
     if (!book || !currentUser) return;
@@ -115,8 +176,8 @@ export default function DetalleLibroPage() {
     <section className="detalleLibroPage">
       <div className="detalleLibroCard">
         <img
-          src={formData.coverUrl || "/assets/defaultBook.png"}
-          alt={formData.title}
+          src={coverUrl || formData.coverUrl || "/assets/defaultBook.png"}
+          alt={formData.title || "Portada del libro"}
           className="detalleLibroImage"
         />
 
@@ -234,7 +295,12 @@ export default function DetalleLibroPage() {
 
                 <div className="metaItem">
                   <strong>Estado</strong>
-                  <span>{book.currentStatus || "Activo"}</span>
+                  <span>{book.currentStatus || book.current_status || "Activo"}</span>
+                </div>
+
+                <div className="metaItem">
+                  <strong>Subido por</strong>
+                  <span>{uploadedByName}</span>
                 </div>
               </div>
             </>

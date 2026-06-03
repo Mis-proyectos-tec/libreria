@@ -109,6 +109,12 @@ export function getBookFileUrl(id) {
   });
 }
 
+export function getBookCoverUrl(id) {
+  return apiRequest(`/books/${id}/cover-url`, {
+    method: "GET",
+  });
+}
+
 export async function openBookPdf(id) {
   const data = await getBookFileUrl(id);
 

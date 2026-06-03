@@ -12,12 +12,14 @@ import DetalleLibroPage from "./pages/detalleLibroPage.jsx";
 import LecturaPage from "./pages/lecturaPage.jsx";
 import AdminLibrosPage from "./pages/adminLibrosPage.jsx";
 import FormLibroPage from "./pages/formLibroPage.jsx";
+import ExplorarLibrosPage from "./pages/explorarLibrosPage.jsx";
 
 import { useAuth } from "./context/authContext.jsx";
 
 export default function App() {
 
   const { isAuthenticated } = useAuth();
+
 
   return (
     <div className="appShell">
@@ -67,6 +69,15 @@ export default function App() {
             element={
               isAuthenticated
                 ? <BibliotecaPage />
+                : <Navigate to="/login" />
+            }
+          />
+          {/* explorar libros publicados */}
+          <Route
+            path="/explorar-libros"
+            element={
+              isAuthenticated
+                ? <ExplorarLibrosPage />
                 : <Navigate to="/login" />
             }
           />

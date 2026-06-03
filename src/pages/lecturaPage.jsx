@@ -5,9 +5,12 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
-import { createReadingProgress, updateReadingProgress } from "../services/booksService.js";
+import {
+  createReadingProgress,
+  updateReadingProgress,
+  getBookFileUrl,
+} from "../services/booksService.js";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -20,10 +23,10 @@ export default function LecturaPage() {
   const { currentUser } = useAuth();
   const { books, loading, error, readingProgress, reloadAppData } = useAppData();
 
-  const libroId = location.state?.libroId || 1;
+  const libroId = location.state?.libroId;
 
   const book = useMemo(() => {
-    return books.find((item) => item.id === libroId);
+    return books.find((item) => String(item.id) === String(libroId)) || null;
   }, [books, libroId]);
 
   const progresoExistente = useMemo(() => {
@@ -41,12 +44,43 @@ export default function LecturaPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+
   useEffect(() => {
     if (progresoExistente?.currentPage) {
       setPageNumber(progresoExistente.currentPage);
       setSavedPage(progresoExistente.currentPage);
     }
   }, [progresoExistente?.currentPage]);
+
+  useEffect(() => {
+  async function loadPdfUrl() {
+    if (!book?.id) return;
+
+    try {
+      setPdfLoading(true);
+      setPdfError("");
+
+      const response = await getBookFileUrl(book.id);
+
+      if (!response?.fileUrl) {
+        setPdfError("No se pudo obtener la URL del PDF.");
+        return;
+      }
+
+      setPdfUrl(response.fileUrl);
+    } catch (err) {
+      console.error(err);
+      setPdfError("No se pudo cargar el PDF del libro.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
+  loadPdfUrl();
+}, [book?.id]);
 
   const hasUnsavedChanges = pageNumber !== savedPage;
 
@@ -120,8 +154,8 @@ export default function LecturaPage() {
 
   if (loading) return <p>Cargando lectura...</p>;
   if (error) return <p>{error}</p>;
+  if (!libroId) return <p>No se recibió el libro seleccionado.</p>;
   if (!book) return <p>Libro no encontrado.</p>;
-  if (!book.pdfUrl) return <p>Este libro no tiene PDF disponible.</p>;
 
   return (
     <section className={`lecturaPage ${darkMode ? "lecturaPageDark" : ""}`}>
@@ -188,8 +222,16 @@ export default function LecturaPage() {
         </div>
 
         <div className={`readingPdfContainer ${darkMode ? "pdfDarkMode" : ""}`}>
+          
+        {pdfLoading ? (
+          <p>Cargando PDF...</p>
+        ) : pdfError ? (
+          <p>{pdfError}</p>
+        ) : !pdfUrl ? (
+          <p>Este libro no tiene PDF disponible.</p>
+        ) : (
           <Document
-            file={`${API_BASE_URL}/books/${book.id}/pdf`}
+            file={pdfUrl}
             onLoadSuccess={onDocumentLoadSuccess}
             loading={<p>Cargando PDF...</p>}
             error={<p>No se pudo cargar el PDF.</p>}
@@ -201,6 +243,7 @@ export default function LecturaPage() {
               renderAnnotationLayer={true}
             />
           </Document>
+        )}
         </div>
 
         <div className="readingFooter">

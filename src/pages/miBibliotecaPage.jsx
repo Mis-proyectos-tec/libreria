@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import BookCard from "../components/bookCard.jsx";
+import Spinner from "../components/Spinner.jsx";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
 
@@ -18,7 +19,6 @@ export default function MiBibliotecaPage() {
   }, [favorites, books, currentUser]);
 
   if (!currentUser) return <p>Debes iniciar sesión.</p>;
-  if (loading) return <p>Cargando biblioteca personal...</p>;
   if (error) return <p>{error}</p>;
 
   return (
@@ -32,22 +32,24 @@ export default function MiBibliotecaPage() {
           <h2>Favoritos</h2>
         </div>
 
-        <div className="booksGrid">
-          {favoritosUsuario.map((book) => (
-            <div
-              key={book.id}
-              onClick={() =>
-                navigate("/detalle-libro", { state: { libroId: book.id } })
-              }
-            >
-              <BookCard
-                titulo={book.title}
-                autor={book.author}
-                portada={book.coverUrl || "/assets/defaultBook.png"}
-              />
-            </div>
-          ))}
-        </div>
+        {loading ? <Spinner inline /> : (
+          <div className="booksGrid">
+            {favoritosUsuario.map((book) => (
+              <div
+                key={book.id}
+                onClick={() =>
+                  navigate("/detalle-libro", { state: { libroId: book.id } })
+                }
+              >
+                <BookCard
+                  titulo={book.title}
+                  autor={book.author}
+                  portada={book.coverUrl || "/assets/defaultBook.png"}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </section>
   );

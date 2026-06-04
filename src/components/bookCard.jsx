@@ -1,4 +1,5 @@
 import ProgressBar from "./ProgressBar.jsx";
+import CoverImage from "./CoverImage.jsx";
 
 export default function BookCard({
   titulo,
@@ -9,11 +10,13 @@ export default function BookCard({
 }) {
   return (
     <article className="bookCard">
-      <img
-        src={portada}
-        alt={`Portada de ${titulo}`}
-        className="bookCardImage"
-      />
+      <div className="bookCardImageWrap">
+        <CoverImage
+          src={portada}
+          alt={`Portada de ${titulo}`}
+          className="bookCardImage"
+        />
+      </div>
       <div className="bookCardBody">
         <h3 className="bookCardTitle">{titulo}</h3>
         <p className="bookCardAuthor">{autor}</p>

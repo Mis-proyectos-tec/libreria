@@ -532,7 +532,7 @@ button:disabled {
 
 .heroBadge {
   display: inline-block;
-  background: rgba(124, 106, 82, 0.1);
+  background: #9c8c7c;
   color: var(--accent-dark);
   padding: 5px 14px;
   border-radius: 999px;
@@ -654,12 +654,42 @@ button:disabled {
   box-shadow: var(--shadow-hover);
 }
 
-.bookCardImage {
+.coverImageWrap {
+  position: relative;
+  background: var(--surface-soft);
+  overflow: hidden;
+  display: block;
+  width: 100%;
+}
+
+.bookCardImageWrap {
   width: 100%;
   aspect-ratio: 2 / 3;
-  object-fit: cover;
+  position: relative;
   background: var(--surface-soft);
+  overflow: hidden;
+}
+
+.bookCardImageSpinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bookCardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
+  transition: opacity 0.2s ease;
+}
+
+.spinnerRingSm {
+  width: 28px !important;
+  height: 28px !important;
+  border-width: 3px !important;
 }
 
 .bookCardBody {
@@ -1352,6 +1382,29 @@ button:disabled {
   color: var(--surface);
 }
 
+.filterPillSelect {
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  outline: none;
+  font-family: inherit;
+}
+
+.filterPillSelect:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.filterPillSelect:focus {
+  border-color: var(--primary);
+}
+
 /* ── Favoritos ── */
 .favoriteCardWrapper {
   display: flex;
@@ -1433,6 +1486,74 @@ body.darkMode .sidebar {
 body.darkMode .booksTable thead,
 body.darkMode .authDecorPanel {
   background: var(--surface-soft);
+}
+
+body.darkMode .filterPill {
+  background: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--text-soft);
+}
+
+body.darkMode .filterPill:hover {
+  border-color: #C4A882;
+  color: #C4A882;
+}
+
+body.darkMode .filterPillActive {
+  background: #C4A882;
+  border-color: #C4A882;
+  color: #1C1714;
+}
+
+body.darkMode .filterPillSelect {
+  background: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--text-soft);
+}
+
+body.darkMode .filterPillSelect:hover,
+body.darkMode .filterPillSelect:focus {
+  border-color: #C4A882;
+  color: #C4A882;
+}
+
+body.darkMode .sidebarLogo {
+  color: var(--text);
+}
+
+body.darkMode .sidebarTagline {
+  color: var(--text-soft);
+}
+
+body.darkMode .sidebarSectionLabel {
+  color: #A09080;
+}
+
+body.darkMode .sidebarLinkActive {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text) !important;
+}
+
+body.darkMode .sidebarLink:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+body.darkMode .sidebarUser:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+body.darkMode .sidebarThemeToggle:hover,
+body.darkMode .sidebarLogout:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body.darkMode .sidebarLogout:hover {
+  background: rgba(192, 98, 78, 0.15);
+  color: #E07060;
+  border-color: #E07060;
 }
 
 /* ── Responsive ── */
@@ -1539,6 +1660,11 @@ body.darkMode .authDecorPanel {
   width: 100%;
   height: 200px;
   object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.explorCard .coverImageWrap {
+  height: 200px;
   border-radius: var(--radius-sm);
 }
 
@@ -1768,4 +1894,41 @@ body.darkMode .authDecorPanel {
   .perfilUsuarioStats {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+/* ── Spinner ── */
+.spinnerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(245, 240, 232, 0.75);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.darkMode .spinnerOverlay {
+  background: rgba(26, 21, 18, 0.8);
+}
+
+.gridSpinnerWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  width: 100%;
+}
+
+.spinnerRing {
+  width: 52px;
+  height: 52px;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spinnerRotate 0.75s linear infinite;
+}
+
+@keyframes spinnerRotate {
+  to { transform: rotate(360deg); }
 }

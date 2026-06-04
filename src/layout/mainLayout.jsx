@@ -3,6 +3,7 @@ import Sidebar from "../components/sidebar.jsx";
 import BottomNav from "../components/BottomNav.jsx";
 
 export default function MainLayout() {
+
   return (
     <div className="appContainer">
       <Sidebar />

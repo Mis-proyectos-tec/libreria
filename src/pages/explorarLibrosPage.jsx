@@ -4,6 +4,8 @@ import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
 import { createFavorite, deleteFavorite, getBookCoverUrl } from "../services/booksService.js";
 import EmptyState from "../components/EmptyState.jsx";
+import Spinner from "../components/Spinner.jsx";
+import CoverImage from "../components/CoverImage.jsx";
 
 export default function ExplorarLibrosPage() {
   const navigate = useNavigate();
@@ -87,7 +89,6 @@ export default function ExplorarLibrosPage() {
     }
   }
 
-  if (loading) return <p style={{ color: "var(--muted)" }}>Cargando libros...</p>;
   if (error) return <p className="unsavedWarning">{error}</p>;
 
   return (
@@ -113,31 +114,33 @@ export default function ExplorarLibrosPage() {
             </span>
           </div>
 
-          <div className="booksGrid">
-            {misPublicaciones.map((book) => (
-              <article key={book.id} className="explorCard">
-                <img
-                  src={getCoverImage(book)}
-                  alt={book.title || "Portada del libro"}
-                  className="explorCardImage"
-                />
-                <div className="explorCardBody">
-                  <h3 className="explorCardTitle">{book.title || "Libro sin título"}</h3>
-                  <p className="explorCardAuthor">{book.author || "Autor desconocido"}</p>
-                  <span className="explorCardBadge explorCardBadgeYours">Tuyo</span>
-                </div>
-                <div className="explorCardActions">
-                  <button
-                    className="primaryButton"
-                    onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}
-                    style={{ flex: 1 }}
-                  >
-                    Ver en biblioteca
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+          {loading ? <Spinner inline /> : (
+            <div className="booksGrid">
+              {misPublicaciones.map((book) => (
+                <article key={book.id} className="explorCard">
+                  <CoverImage
+                    src={getCoverImage(book)}
+                    alt={book.title || "Portada del libro"}
+                    className="explorCardImage"
+                  />
+                  <div className="explorCardBody">
+                    <h3 className="explorCardTitle">{book.title || "Libro sin título"}</h3>
+                    <p className="explorCardAuthor">{book.author || "Autor desconocido"}</p>
+                    <span className="explorCardBadge explorCardBadgeYours">Tuyo</span>
+                  </div>
+                  <div className="explorCardActions">
+                    <button
+                      className="primaryButton"
+                      onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}
+                      style={{ flex: 1 }}
+                    >
+                      Ver en biblioteca
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -150,7 +153,7 @@ export default function ExplorarLibrosPage() {
           </span>
         </div>
 
-        {librosDeOtros.length === 0 ? (
+        {loading ? <Spinner inline /> : librosDeOtros.length === 0 ? (
           <EmptyState
             icon="◎"
             title="Sin libros de la comunidad"

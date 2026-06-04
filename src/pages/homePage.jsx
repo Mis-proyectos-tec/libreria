@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BookCard from "../components/bookCard.jsx";
 import StatCard from "../components/StatCard.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import Spinner from "../components/Spinner.jsx";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
 import { getBookCoverUrl } from "../services/booksService.js";
@@ -93,7 +94,6 @@ export default function HomePage() {
   }, [books, favorites, currentUser]);
 
   if (!currentUser) return <p>Debes iniciar sesión.</p>;
-  if (loading) return <p style={{ color: "var(--muted)" }}>Cargando...</p>;
   if (error) return <p className="unsavedWarning">{error}</p>;
 
   const hora = new Date().getHours();
@@ -136,7 +136,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {continueReadingBooks.length === 0 ? (
+        {loading ? <Spinner inline /> : continueReadingBooks.length === 0 ? (
           <EmptyState
             icon="📖"
             title="Sin lecturas activas"
@@ -181,7 +181,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {misBibliotecaLibros.length === 0 ? (
+        {loading ? <Spinner inline /> : misBibliotecaLibros.length === 0 ? (
           <EmptyState
             icon="📚"
             title="Biblioteca vacía"

@@ -4,13 +4,15 @@ import { deleteBook } from "../services/booksService.js";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import Spinner from "../components/Spinner.jsx";
 
 export default function AdminLibrosPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, readingProgress, loading, error, reloadAppData } = useAppData();
+  const { books, categories, readingProgress, loading, error, reloadAppData } = useAppData();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const librosUsuario = useMemo(() => {
     return books.filter((book) => book.userId === currentUser?.id);
@@ -18,12 +20,13 @@ export default function AdminLibrosPage() {
 
   const filteredBooks = useMemo(() => {
     return librosUsuario.filter((book) => {
-      return (
+      const matchesSearch =
         book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+        book.author.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === "all" || book.category === categoryFilter;
+      return matchesSearch && matchesCategory;
     });
-  }, [librosUsuario, searchTerm]);
+  }, [librosUsuario, searchTerm, categoryFilter]);
 
   function hasReadingProgress(bookId) {
     return readingProgress?.some(
@@ -44,7 +47,6 @@ export default function AdminLibrosPage() {
   }
 
   if (!currentUser) return <p>Debes iniciar sesión.</p>;
-  if (loading) return <p style={{ color: "var(--muted)" }}>Cargando...</p>;
   if (error) return <p className="unsavedWarning">{error}</p>;
 
   return (
@@ -70,9 +72,19 @@ export default function AdminLibrosPage() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        <select
+          className="adminSelect"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          <option value="all">Todas las categorías</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.name}>{cat.name}</option>
+          ))}
+        </select>
       </div>
 
-      {filteredBooks.length === 0 ? (
+      {loading ? <Spinner inline /> : filteredBooks.length === 0 ? (
         <EmptyState
           icon="✎"
           title={searchTerm ? "Sin resultados" : "Sin libros"}

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BookCard from "../components/bookCard.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import Spinner from "../components/Spinner.jsx";
 import { useAuth } from "../context/authContext.jsx";
 import { useAppData } from "../context/appDataContext.jsx";
 import { deleteFavorite, getBookCoverUrl } from "../services/booksService.js";
@@ -104,7 +105,6 @@ export default function BibliotecaPage() {
   }
 
   if (!currentUser) return <section className="bibliotecaPage"><h1>Biblioteca</h1><p>Debes iniciar sesión.</p></section>;
-  if (loading) return <section className="bibliotecaPage"><h1>Biblioteca</h1><p style={{ color: "var(--muted)" }}>Cargando libros...</p></section>;
   if (error) return <section className="bibliotecaPage"><h1>Biblioteca</h1><p className="unsavedWarning">{error}</p></section>;
 
   return (
@@ -150,30 +150,22 @@ export default function BibliotecaPage() {
           >
             Guardados
           </button>
-        </div>
-
-        <div className="filterPills">
-          <button
-            className={`filterPill${selectedCategory === "all" ? " filterPillActive" : ""}`}
-            onClick={() => setSelectedCategory("all")}
+          <select
+            className="filterPillSelect"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
           >
-            Todas
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              className={`filterPill${selectedCategory === category.name ? " filterPillActive" : ""}`}
-              onClick={() => setSelectedCategory(category.name)}
-            >
-              {category.name}
-            </button>
-          ))}
+            <option value="all">Todas las categorías</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.name}>{category.name}</option>
+            ))}
+          </select>
         </div>
       </div>
 
       {displayMisLibros && (
         <>
-          {filteredMisLibros.length === 0 && !searchTerm && filterType !== "guardados" ? (
+          {loading ? <Spinner inline /> : filteredMisLibros.length === 0 && !searchTerm && filterType !== "guardados" ? (
             <div style={{ marginTop: "40px" }}>
               <EmptyState
                 icon="📚"
@@ -221,7 +213,7 @@ export default function BibliotecaPage() {
 
       {displayGuardados && (
         <>
-          {filteredGuardados.length === 0 && !searchTerm && filterType !== "mis" ? (
+          {loading ? <Spinner inline /> : filteredGuardados.length === 0 && !searchTerm && filterType !== "mis" ? (
             <div style={{ marginTop: "40px" }}>
               <EmptyState
                 icon="♡"

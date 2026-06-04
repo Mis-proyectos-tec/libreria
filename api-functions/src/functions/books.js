@@ -2,20 +2,20 @@ const { app } = require('@azure/functions');
 const sql = require('mssql');
 const { BlobServiceClient } = require('@azure/storage-blob');
 
-let poolPromise = null;
-
 async function getSqlPool() {
-    if (!poolPromise) {
-        const connectionString = process.env.SQL_CONNECTION_STRING;
+    try {
+        if (!poolPromise) {
+            const connectionString = process.env.SQL_CONNECTION_STRING;
 
-        if (!connectionString) {
-            throw new Error('SQL_CONNECTION_STRING no está configurado.');
+            poolPromise = sql.connect(connectionString);
         }
 
-        poolPromise = sql.connect(connectionString);
-    }
+        return await poolPromise;
 
-    return poolPromise;
+    } catch (error) {
+        poolPromise = null;
+        throw error;
+    }
 }
 
 function parseBoolean(value, defaultValue = true) {

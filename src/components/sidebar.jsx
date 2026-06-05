@@ -44,8 +44,8 @@ export default function Sidebar() {
       if (!active) return;
 
       setNotifications((prev) => [notification, ...prev].slice(0, 10));
-    }).catch(() => {
-      console.error("No se pudo conectar al servicio de notificaciones.");
+    }).catch((error) => {
+      console.error("No se pudo conectar:", error.message);
     });
 
     return () => {

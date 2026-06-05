@@ -1932,3 +1932,276 @@ body.darkMode .spinnerOverlay {
 @keyframes spinnerRotate {
   to { transform: rotate(360deg); }
 }
+
+
+.sidebarNotificationButton {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: left;
+}
+
+.sidebarNotificationButton:hover {
+  background: var(--secondary);
+  color: var(--text);
+}
+
+.sidebarNotificationBadge {
+  margin-left: auto;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebarNotificationPanel {
+  margin-top: 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.sidebarNotificationEmpty {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+}
+
+.sidebarNotificationItem {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.sidebarNotificationItem strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--primary-hover);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sidebarNotificationItem p {
+  margin: 0 0 5px;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.sidebarNotificationItem small {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+/* ── Botón eliminar en detalle libro ── */
+.dangerActionButton {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  background: #FEE2E6;
+  color: var(--danger-hover);
+}
+
+.dangerActionButton:hover {
+  background: var(--danger);
+  color: white;
+  transform: translateY(-1px);
+}
+
+
+/* ── Botón de me gusta ── */
+.likeButton {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 0.92rem;
+  background: var(--surface);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.likeButton:hover {
+  background: #FFF0F5;
+  border-color: var(--accent-pink);
+  color: #C85E68;
+  transform: translateY(-1px);
+}
+
+.likeButtonActive {
+  background: #F5C2CB;
+  border-color: #F5C2CB;
+  color: #7A2E3A;
+  box-shadow: 0 4px 18px rgba(245, 194, 203, 0.45);
+}
+
+.likeButtonActive:hover {
+  background: #F2AEBB;
+  border-color: #F2AEBB;
+  color: #7A2E3A;
+}
+
+.likeButton:disabled {
+  opacity: 0.75;
+  cursor: default;
+  transform: none;
+}
+
+.likeButton strong {
+  font-size: 0.82rem;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+
+/* ── Notificaciones en sidebar ── */
+.sidebarNotificationButton {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: left;
+}
+
+.sidebarNotificationButton:hover {
+  background: var(--secondary);
+  color: var(--text);
+}
+
+.sidebarNotificationBadge {
+  margin-left: auto;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebarNotificationPanel {
+  margin-top: 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.sidebarNotificationEmpty {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+}
+
+.sidebarNotificationItem {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.sidebarNotificationItem:last-child {
+  margin-bottom: 0;
+}
+
+.sidebarNotificationItem strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--primary-hover);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sidebarNotificationItem p {
+  margin: 0 0 5px;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.sidebarNotificationItem small {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+
+/* ── Dark mode para notificaciones y like ── */
+body.darkMode .sidebarNotificationPanel {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+body.darkMode .sidebarNotificationItem {
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+
+body.darkMode .likeButton {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body.darkMode .likeButton:hover {
+  background: #3D2635;
+  border-color: #7A3D52;
+  color: #F5C2CB;
+}
+
+body.darkMode .likeButtonActive {
+  background: #7A3D52;
+  border-color: #7A3D52;
+  color: #FFE4EA;
+}

@@ -9,45 +9,40 @@ import {
   deleteBook,
   getBookCoverUrl,
 } from "../services/booksService.js";
+import {
+  getBookLikeStatus,
+  toggleBookLike,
+} from "../services/notificationsService.js";
 
 export default function DetalleLibroPage() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const { currentUser } = useAuth();
-  const { books, users = [], loading, error, reloadAppData, favorites, readingProgress } = useAppData();
+
+  const {
+    books = [],
+    users = [],
+    loading,
+    error,
+    reloadAppData,
+    favorites = [],
+    readingProgress = [],
+  } = useAppData();
 
   const libroId = location.state?.libroId;
 
-const book = useMemo(() => {
-  return books.find((item) => String(item.id) === String(libroId)) || null;
-}, [books, libroId]);
-
-  const favoritoActual = useMemo(() => {
-    if (!book || !currentUser) return null;
-    return favorites.find(
-      (f) =>
-        String(f.userId) === String(currentUser.id) &&
-        String(f.bookId) === String(book.id)
-    ) || null;
-  }, [favorites, book, currentUser]);
-
-  const esFavorito = Boolean(favoritoActual);
-
-  const tieneProgreso = useMemo(() => {
-    if (!currentUser || !book) return false;
-    return readingProgress?.some(
-      (p) => String(p.userId) === String(currentUser.id) && String(p.bookId) === String(book.id)
-    ) || false;
-  }, [readingProgress, currentUser, book]);
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
+  const book = useMemo(() => {
+    return books.find((item) => String(item.id) === String(libroId)) || null;
+  }, [books, libroId]);
 
   const currentUserId =
     currentUser?.id ||
     currentUser?.userId ||
     currentUser?.user_id ||
     currentUser?.uid ||
+    currentUser?.firebaseUid ||
+    currentUser?.firebaseUuid ||
     null;
 
   const bookOwnerId =
@@ -60,86 +55,153 @@ const book = useMemo(() => {
   const esDuenoDelLibro =
     currentUserId && bookOwnerId && String(currentUserId) === String(bookOwnerId);
 
+  const favoritoActual = useMemo(() => {
+    if (!book || !currentUserId) return null;
+
+    return (
+      favorites.find(
+        (favorite) =>
+          String(favorite.userId || favorite.user_id) === String(currentUserId) &&
+          String(favorite.bookId || favorite.book_id) === String(book.id)
+      ) || null
+    );
+  }, [favorites, book, currentUserId]);
+
+  const esFavorito = Boolean(favoritoActual);
+
+  const tieneProgreso = useMemo(() => {
+    if (!currentUserId || !book) return false;
+
+    return (
+      readingProgress?.some(
+        (progress) =>
+          String(progress.userId || progress.user_id) === String(currentUserId) &&
+          String(progress.bookId || progress.book_id) === String(book.id)
+      ) || false
+    );
+  }, [readingProgress, currentUserId, book]);
+
+  const uploadedByName = useMemo(() => {
+    if (!book) return "Usuario desconocido";
+
+    if (book.uploader_name) {
+      return book.uploader_name;
+    }
+
+    const userId = book.userId || book.user_id;
+
+    if (!userId) return "Usuario desconocido";
+
+    const user = users.find((item) => String(item.id) === String(userId));
+
+    if (!user) return `Usuario ${userId}`;
+
+    return (
+      user.name ||
+      user.fullName ||
+      user.username ||
+      user.email ||
+      `Usuario ${userId}`
+    );
+  }, [book, users]);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
 
-const uploadedByName = useMemo(() => {
-  if (!book) return "Usuario desconocido";
-
-  const userId = book.userId || book.user_id;
-
-  if (!userId) return "Usuario desconocido";
-
-  const user = users.find((item) => String(item.id) === String(userId));
-
-  if (!user) return `Usuario ${userId}`;
-
-  return user.name || user.fullName || user.username || user.email || `Usuario ${userId}`;
-}, [book, users]);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
 
   const [formData, setFormData] = useState({
-    title: book?.title || "",
-    author: book?.author || "",
-    category: book?.category || "",
-    description: book?.description || "",
-    language: book?.language || "",
-    totalPages: book?.totalPages || "",
-    currentStatus: book?.currentStatus || "",
-    coverUrl: book?.coverUrl || "",
-    pdfUrl: book?.pdfUrl || "",
+    title: "",
+    author: "",
+    category: "",
+    description: "",
+    language: "",
+    totalPages: "",
+    currentStatus: "",
+    coverUrl: "",
+    pdfUrl: "",
   });
 
   useEffect(() => {
-  if (!book) return;
+    if (!book) return;
 
-  setFormData({
-    title: book.title || "",
-    author: book.author || "",
-    category: book.category || "",
-    description: book.description || "",
-    language: book.language || "es",
-    totalPages: book.totalPages || book.total_pages || "",
-    currentStatus: book.currentStatus || book.current_status || "activo",
-    coverUrl: book.coverUrl || "",
-    pdfUrl: book.pdfUrl || "",
-  });
-}, [book]);
+    setFormData({
+      title: book.title || "",
+      author: book.author || "",
+      category: book.category || "",
+      description: book.description || "",
+      language: book.language || "es",
+      totalPages: book.totalPages || book.total_pages || "",
+      currentStatus: book.currentStatus || book.current_status || "activo",
+      coverUrl: book.coverUrl || "",
+      pdfUrl: book.pdfUrl || "",
+    });
+  }, [book]);
 
-useEffect(() => {
-  async function loadCover() {
-    if (!book?.id) return;
+  useEffect(() => {
+    async function loadCover() {
+      if (!book?.id) return;
 
-    const hasCover = book.cover_blob_name || book.coverBlobName;
+      const hasCover = book.cover_blob_name || book.coverBlobName;
 
-    if (!hasCover) {
-      setCoverUrl("");
-      return;
+      if (!hasCover) {
+        setCoverUrl("");
+        return;
+      }
+
+      try {
+        const response = await getBookCoverUrl(book.id);
+        setCoverUrl(response.coverUrl || "");
+      } catch {
+        setCoverUrl("");
+      }
     }
 
-    try {
-      const response = await getBookCoverUrl(book.id);
-      setCoverUrl(response.coverUrl || "");
-    } catch (err) {
-      console.warn("No se pudo cargar la portada del libro.", err);
-      setCoverUrl("");
+    loadCover();
+  }, [book?.id, book?.cover_blob_name, book?.coverBlobName]);
+
+  useEffect(() => {
+    async function loadLikeStatus() {
+      if (!book?.id || !currentUser || esDuenoDelLibro) {
+        setLiked(false);
+        setLikesCount(0);
+        return;
+      }
+
+      try {
+        const data = await getBookLikeStatus(book.id, currentUser);
+        setLiked(Boolean(data.liked));
+        setLikesCount(data.likesCount || 0);
+      } catch {
+        setLiked(false);
+        setLikesCount(0);
+      }
     }
-  }
 
-  loadCover();
-}, [book?.id, book?.cover_blob_name, book?.coverBlobName]);
-
-  
+    loadLikeStatus();
+  }, [book?.id, currentUserId, esDuenoDelLibro, currentUser]);
 
   async function toggleFavorito() {
-    if (!book || !currentUser) return;
+    if (!book || !currentUserId) return;
+
     try {
       if (esFavorito) {
         await deleteFavorite(favoritoActual.id);
       } else {
-        await createFavorite({ userId: currentUser.id, bookId: book.id });
+        await createFavorite({
+          userId: currentUserId,
+          bookId: book.id,
+        });
       }
-      await reloadAppData();
-    } catch (err) {
-      console.error(err);
+
+      if (reloadAppData) {
+        await reloadAppData();
+      }
+    } catch {
+      alert("No se pudo actualizar tu biblioteca.");
     }
   }
 
@@ -155,11 +217,19 @@ useEffect(() => {
   async function handleSaveBook() {
     if (!book) return;
 
+    if (!esDuenoDelLibro) {
+      setSaveMessage("No tienes permiso para editar este libro.");
+      return;
+    }
+
     try {
       const payload = {
-        ...book,
-        ...formData,
-        totalPages: Number(formData.totalPages) || 0,
+        title: formData.title,
+        author: formData.author,
+        category: formData.category,
+        description: formData.description,
+        language: formData.language,
+        currentStatus: formData.currentStatus,
       };
 
       await updateBook(book.id, payload);
@@ -170,9 +240,8 @@ useEffect(() => {
       if (reloadAppData) {
         await reloadAppData();
       }
-    } catch (err) {
-      console.error(err);
-      setSaveMessage("No se pudo actualizar el libro en el API.");
+    } catch {
+      setSaveMessage("No se pudo actualizar el libro.");
     }
   }
 
@@ -182,9 +251,9 @@ useEffect(() => {
       author: book?.author || "",
       category: book?.category || "",
       description: book?.description || "",
-      language: book?.language || "",
-      totalPages: book?.totalPages || "",
-      currentStatus: book?.currentStatus || "",
+      language: book?.language || "es",
+      totalPages: book?.totalPages || book?.total_pages || "",
+      currentStatus: book?.currentStatus || book?.current_status || "activo",
       coverUrl: book?.coverUrl || "",
       pdfUrl: book?.pdfUrl || "",
     });
@@ -215,9 +284,36 @@ useEffect(() => {
       }
 
       navigate("/explorar-libros");
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("No se pudo eliminar el libro.");
+    }
+  }
+
+  async function handleLikeBook() {
+    if (!book || !currentUser || likeLoading || esDuenoDelLibro) return;
+
+    const previousLiked = liked;
+    const previousCount = likesCount;
+    const nextLiked = !previousLiked;
+
+    setLiked(nextLiked);
+    setLikesCount((prev) => {
+      if (nextLiked) return prev + 1;
+      return Math.max(prev - 1, 0);
+    });
+
+    try {
+      setLikeLoading(true);
+
+      const response = await toggleBookLike(book.id, currentUser);
+
+      setLiked(Boolean(response.liked));
+      setLikesCount(response.likesCount || 0);
+    } catch {
+      setLiked(previousLiked);
+      setLikesCount(previousCount);
+    } finally {
+      setLikeLoading(false);
     }
   }
 
@@ -236,7 +332,9 @@ useEffect(() => {
         />
 
         <div className="detalleLibroContent">
-          <span className="heroBadge">{formData.category || "Sin categoría"}</span>
+          <span className="heroBadge">
+            {formData.category || "Sin categoría"}
+          </span>
 
           {isEditing ? (
             <div className="perfilGrid">
@@ -281,41 +379,11 @@ useEffect(() => {
               </div>
 
               <div className="perfilField">
-                <label>Páginas</label>
-                <input
-                  type="number"
-                  name="totalPages"
-                  value={formData.totalPages}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="perfilField">
                 <label>Estado</label>
                 <input
                   type="text"
                   name="currentStatus"
                   value={formData.currentStatus}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="perfilField">
-                <label>Portada URL</label>
-                <input
-                  type="text"
-                  name="coverUrl"
-                  value={formData.coverUrl}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="perfilField">
-                <label>PDF URL</label>
-                <input
-                  type="text"
-                  name="pdfUrl"
-                  value={formData.pdfUrl}
                   onChange={handleChange}
                 />
               </div>
@@ -333,8 +401,14 @@ useEffect(() => {
           ) : (
             <>
               <h1>{book.title}</h1>
-              <p className="detalleAutor">{book.author}</p>
-              <p className="detalleDescripcion">{book.description}</p>
+
+              <p className="detalleAutor">
+                {book.author || "Autor no especificado"}
+              </p>
+
+              <p className="detalleDescripcion">
+                {book.description || "Sin descripción disponible."}
+              </p>
 
               <div className="detalleMeta">
                 <div className="metaItem">
@@ -343,23 +417,20 @@ useEffect(() => {
                 </div>
 
                 <div className="metaItem">
-                  <strong>Páginas</strong>
-                  <span>{book.totalPages || "N/A"}</span>
-                </div>
-
-                <div className="metaItem">
                   <strong>Estado</strong>
-                  <span>{book.currentStatus || book.current_status || "Activo"}</span>
+                  <span>
+                    {book.currentStatus || book.current_status || "Activo"}
+                  </span>
                 </div>
 
                 <div className="metaItem">
                   <strong>Subido por</strong>
-                  <button
-                    className="metaItemLink"
-                    onClick={() => navigate("/perfil-usuario", { state: { usuarioId: bookOwnerId } })}
-                  >
-                    {uploadedByName}
-                  </button>
+                  <span>{uploadedByName}</span>
+                </div>
+
+                <div className="metaItem">
+                  <strong>Me gusta</strong>
+                  <span>{likesCount}</span>
                 </div>
               </div>
             </>
@@ -370,43 +441,52 @@ useEffect(() => {
           <div className="detalleActions">
             <button
               className="secondaryButton"
-              onClick={() => navigate("/biblioteca")}
+              onClick={() => navigate("/explorar-libros")}
             >
               Volver
             </button>
 
-            {esDuenoDelLibro ? (
+            <button
+              className="primaryButton"
+              onClick={() =>
+                navigate("/lectura", { state: { libroId: book.id } })
+              }
+            >
+              {tieneProgreso ? "Seguir lectura" : "Empezar lectura"}
+            </button>
+
+            {!esDuenoDelLibro && (
               <>
-                <button
-                  className="primaryButton"
-                  onClick={() =>
-                    navigate("/lectura", { state: { libroId: book.id } })
-                  }
-                >
-                  Seguir leyendo
+                <button className="secondaryButton" onClick={toggleFavorito}>
+                  {esFavorito
+                    ? "★ Quitar de biblioteca"
+                    : "☆ Agregar a mi biblioteca"}
                 </button>
 
-                {!isEditing ? (
-                  <button
-                    className="secondaryButton"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setSaveMessage("");
-                    }}
-                  >
-                    Editar libro
-                  </button>
-                ) : (
-                  <>
-                    <button className="primaryButton" onClick={handleSaveBook}>
-                      Guardar cambios
-                    </button>
+                <button
+                  className={`likeButton${liked ? " likeButtonActive" : ""}`}
+                  onClick={handleLikeBook}
+                  disabled={likeLoading}
+                  aria-label={liked ? "Quitar me gusta" : "Dar me gusta"}
+                  title={liked ? "Quitar me gusta" : "Dar me gusta"}
+                >
+                  <span>{liked ? "♥" : "♡"}</span>
+                  <strong>{likesCount}</strong>
+                </button>
+              </>
+            )}
 
-                    <button className="secondaryButton" onClick={handleCancelEdit}>
-                      Cancelar
-                    </button>
-                  </>
-                )}
+            {esDuenoDelLibro && !isEditing && (
+              <>
+                <button
+                  className="secondaryButton"
+                  onClick={() => {
+                    setIsEditing(true);
+                    setSaveMessage("");
+                  }}
+                >
+                  Editar libro
+                </button>
 
                 <button
                   className="dangerActionButton"
@@ -415,16 +495,16 @@ useEffect(() => {
                   Eliminar libro
                 </button>
               </>
-            ) : (
+            )}
+
+            {esDuenoDelLibro && isEditing && (
               <>
-                <button
-                  className="primaryButton"
-                  onClick={() => navigate("/lectura", { state: { libroId: book.id } })}
-                >
-                  {tieneProgreso ? "Seguir lectura" : "Empezar lectura"}
+                <button className="primaryButton" onClick={handleSaveBook}>
+                  Guardar cambios
                 </button>
-                <button className="secondaryButton" onClick={toggleFavorito}>
-                  {esFavorito ? "★ Quitar de biblioteca" : "☆ Agregar a mi biblioteca"}
+
+                <button className="secondaryButton" onClick={handleCancelEdit}>
+                  Cancelar
                 </button>
               </>
             )}

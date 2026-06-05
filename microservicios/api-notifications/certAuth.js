@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 
 module.exports = function certAuth(req, res, next) {
-    if (req.path === '/health') return next();
+    if (req.path === '/health' || req.path === '/debug-headers') return next();
 
     const expectedThumbprint = (process.env.APIM_CERT_THUMBPRINT || '')
         .toUpperCase()

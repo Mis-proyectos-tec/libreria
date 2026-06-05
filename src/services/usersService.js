@@ -23,6 +23,19 @@ export async function getUsers() {
   return response.json();
 }
 
+export async function getUserByFirebaseUid(uid) {
+  const response = await fetch(`${API_BASE_URL}/firebase/${encodeURIComponent(uid)}`, {
+    method: "GET",
+    headers: authHeaders
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error HTTP: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 export async function getUserById(id) {
   const response = await fetch(`${API_BASE_URL}/${id}`, {
     method: "GET",

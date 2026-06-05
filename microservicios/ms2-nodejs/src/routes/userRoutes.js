@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require("../controllers/userController");
 
 router.get("/", controller.getAll);
+router.get("/firebase/:uid", controller.getByFirebaseUid);
 router.get("/:id", controller.getById);
 router.post("/", controller.create);
 router.put("/:id", controller.update);

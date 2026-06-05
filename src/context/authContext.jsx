@@ -10,7 +10,7 @@ import {
   reauthenticateWithCredential,
 } from "firebase/auth";
 import { auth } from "../firebase.js";
-import { getUsers, createUser, updateUser } from "../services/usersService.js";
+import { getUserByFirebaseUid, createUser, updateUser } from "../services/usersService.js";
 
 const AuthContext = createContext();
 
@@ -31,9 +31,8 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          const users = await getUsers();
-          const apiUser = users.find((u) => u.firebaseUid === firebaseUser.uid);
-          setCurrentUser(apiUser ? { ...apiUser, uid: firebaseUser.uid } : null);
+          const apiUser = await getUserByFirebaseUid(firebaseUser.uid);
+          setCurrentUser({ ...apiUser, uid: firebaseUser.uid });
         } catch {
           setCurrentUser(null);
         }

@@ -11,11 +11,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Frontend | `src/` | React 19, Vite, React Router v7 | Completo |
 | MS-1 Backend | `api-functions/` | Azure Functions + Node.js + SQL Server | Completo y desplegado |
 | MS-2 Backend | `microservicios/ms2-nodejs/` | Node.js, Express, Mongoose | Completo y desplegado |
-| MS-3 Backend | `microservicios/ms3-python/` *(pendiente)* | Python + FastAPI (Notifications) | Pendiente |
+| MS-3 Backend | `microservicios/api-notifications/` | Node.js, Express, SignalR, SQL Server | Completo y desplegado |
 
 ---
 
-## Estado Actual del Proyecto (2026-06-04)
+## Estado Actual del Proyecto (2026-06-05)
 
 ### Completado
 
@@ -26,17 +26,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] MS-2 Node.js + Express desplegado en Azure App Service (`readflow-ms2`)
 - [x] Cosmos DB for MongoDB — colecciones: `users`, `readingprogresses`, `favorites`
 - [x] Reading Progress y Favorites migrados de localStorage → MS-2 API
-- [x] APIM configurado con todos los endpoints de MS-1 y MS-2 usando `set-backend-service`
-- [x] GitHub Actions CI/CD para MS-2 (`deploy-ms2.yml`)
+- [x] APIM configurado con todos los endpoints de MS-1, MS-2 y MS-3 usando `set-backend-service`
+- [x] GitHub Actions CI/CD para MS-2 (`deploy-ms2.yml`) y MS-3 (`deploy-ms3.yml`)
 - [x] Compound unique indexes en `ReadingProgress` y `Favorite`
 - [x] MS-1 Azure Functions — Books CRUD + file/cover URLs + file upload (Azure Storage Blob)
-- [x] **Certificados mTLS implementados y funcionando** — APIM presenta `apim-client-cert` a MS-1 y MS-2; backends validan thumbprint
+- [x] **Certificados mTLS implementados y funcionando** — APIM presenta `apim-client-cert` a MS-1, MS-2 y MS-3; backends validan thumbprint
+- [x] **MS-3 Node.js + Express desplegado en Azure App Service (`app-milibreria-notifications`)**
+- [x] MS-3 — Notificaciones en tiempo real via Azure SignalR Service
+- [x] MS-3 — Book likes con persistencia en Azure SQL Server (`dbo.BookLikes`, `dbo.Notifications`)
+- [x] MS-3 — `certAuth.js` middleware validando `X-ARR-ClientCert` thumbprint
 
 ### Pendiente
 
-- [ ] **MS-3 Python FastAPI** — Notificaciones con Azure Service Bus + WebSocket
-- [ ] Colección Postman — 19 endpoints, mínimo 1 test por endpoint (entregable)
-- [ ] GitHub Actions para MS-3
+- [ ] Colección Postman — mínimo 1 test por endpoint (entregable)
 - [ ] Documentación Swagger / OpenAPI
 - [ ] Video demostrativo — máx 5 min, arquitectura + flujos de negocio
 
@@ -44,30 +46,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Próximos Pasos (orden recomendado)
 
-### 1. MS-3 — Python FastAPI (Notifications)
-- Crear proyecto FastAPI en `microservicios/ms3-python/`
-- Conectar a Azure Service Bus (receptor de mensajes)
-- WebSocket para notificaciones en tiempo real al frontend
-- MS-1 o MS-2 publican eventos al Service Bus (ej. libro agregado)
-- Crear Azure App Service para MS-3
-- Configurar certificados mTLS para MS-3 (ver sección Certificados más abajo)
-- Configurar GitHub Actions `deploy-ms3.yml`
-
-### 2. Postman Collection
-- Crear colección con los 19 endpoints (5 MS-1 + 14 MS-2)
+### 1. Postman Collection
+- Crear colección con todos los endpoints (MS-1 + MS-2 + MS-3)
 - Al menos 1 test automatizado por endpoint (status code, schema, etc.)
 - Exportar como JSON para entrega
 - Configurar certificado `apim-client-cert` en la colección Postman para autenticación
 
-### 3. Documentación Final
-- Swagger/OpenAPI para MS-1 y MS-2
-- Video máx 5 min: mostrar arquitectura APIM → microservicios, flujos de login, favoritos, lectura, notificaciones
+### 2. Documentación Final
+- Swagger/OpenAPI para MS-1, MS-2 y MS-3
+- Video máx 5 min: mostrar arquitectura APIM → microservicios, flujos de login, favoritos, lectura, notificaciones y likes
 
 ---
 
 ## Seguridad — Certificados mTLS (APIM → Backends)
 
-Esta sección documenta la implementación completa de certificados. **Repetir estos pasos al crear MS-3.**
+Esta sección documenta la implementación completa de certificados. Está implementado en MS-1, MS-2 y MS-3.
 
 ### Arquitectura
 
@@ -87,15 +80,19 @@ Cliente (Frontend/Postman)
 | `apim-client-cert` | APIM lo presenta al llamar a cualquier backend |
 | `func-milibreria-api-server` | Cert de servidor de MS-1 |
 | `readflow-ms2-server` | Cert de servidor de MS-2 |
+| `readflow-ms3-server` | Cert de servidor de MS-3 |
 
-Al crear MS-3, agregar: `readflow-ms3-server` con el mismo proceso.
+### APIM — Policy de API (`books-api-v1` → All Operations)
 
-### APIM — Policy Global (All Operations)
+**Importante:** La policy que aplica es la de nivel API, no la global. Cada operación tiene además su propia policy con `<base />` + `<set-backend-service backend-id="...">`.
 
 ```xml
 <policies>
     <inbound>
         <choose>
+            <when condition="@(context.Request.Url.Path.Contains("/notifications") || (context.Request.Url.Path.Contains("/books") && context.Request.Url.Path.Contains("/like")))">
+                <set-backend-service backend-id="ms3-notifications" />
+            </when>
             <when condition="@(context.Request.Url.Path.Contains("/books") || context.Request.Url.Path.Contains("/categories"))">
                 <set-backend-service backend-id="ms1-functions" />
             </when>
@@ -134,21 +131,33 @@ Al crear MS-3, agregar: `readflow-ms3-server` con el mismo proceso.
 </policies>
 ```
 
-Al agregar MS-3 al `<choose>`, añadir una nueva `<when>` con el path de notificaciones y el backend-id de MS-3.
+**Policy de operación (patrón para todas las operaciones):**
+```xml
+<policies>
+    <inbound>
+        <base />
+        <set-backend-service backend-id="ms3-notifications" />
+    </inbound>
+    <backend><base /></backend>
+    <outbound><base /></outbound>
+    <on-error><base /></on-error>
+</policies>
+```
+Cambiar `backend-id` según el microservicio: `ms1-functions`, `ms2-nodejs` o `ms3-notifications`.
 
 ### Configuración Azure Portal por backend
 
 Para cada App Service / Function App:
 1. **Configuration → General settings → Client certificate mode → Allow**
-   - `readflow-ms2` ✅ hecho
-   - `func-milibreria-api` ✅ hecho
-   - MS-3 App Service → pendiente al crearlo
+   - `readflow-ms2` ✅
+   - `func-milibreria-api` ✅
+   - `app-milibreria-notifications` ✅
 
 2. **Configuration → Application settings → `APIM_CERT_THUMBPRINT`**
-   - Valor: thumbprint del certificado `apim-client-cert` (se obtiene en Key Vault → Certificates → apim-client-cert → versión actual)
-   - `readflow-ms2` ✅ hecho
-   - `func-milibreria-api` ✅ hecho
-   - MS-3 App Service → pendiente al crearlo
+   - Valor: `11E5BC9270C6FC8224A65300B1D2F2A6DA67887B` (thumbprint de `apim-client-cert`)
+   - `readflow-ms2` ✅
+   - `func-milibreria-api` ✅
+   - `app-milibreria-notifications` ✅
 
 ### Implementación en código
 
@@ -160,23 +169,7 @@ Si `APIM_CERT_THUMBPRINT` no está configurado (desarrollo local), la validació
 
 **MS-1 (Azure Functions)** — utilidad en `src/functions/certAuth.js`, llamada al inicio de cada handler con `const certError = checkApimCert(request); if (certError) return certError;`. El health check no tiene validación.
 
-**MS-3 (Python FastAPI)** — al implementar, crear middleware equivalente:
-```python
-import hashlib, base64, os
-from fastapi import Request, HTTPException
-
-async def verify_apim_cert(request: Request):
-    expected = os.getenv("APIM_CERT_THUMBPRINT", "").upper().replace(":", "").replace(" ", "")
-    if not expected:
-        return
-    cert_header = request.headers.get("x-arr-clientcert")
-    if not cert_header:
-        raise HTTPException(status_code=401, detail="Client certificate required")
-    cert_der = base64.b64decode(cert_header)
-    thumbprint = hashlib.sha1(cert_der).hexdigest().upper()
-    if thumbprint != expected:
-        raise HTTPException(status_code=403, detail="Invalid client certificate")
-```
+**MS-3 (Express)** — middleware en `certAuth.js` en la raíz del proyecto, registrado en `server.js` con `app.use(certAuth)` antes de las rutas. El endpoint `/health` está excluido.
 
 ---
 
@@ -464,29 +457,93 @@ GitHub Actions: `.github/workflows/deploy-ms2.yml`
 
 ---
 
-## MS-3 — Python FastAPI (Notifications)
+## MS-3 — `microservicios/api-notifications/`
 
-**Estado: Pendiente de implementar.**
+Node.js + Express microservice para notificaciones en tiempo real y book likes. Desplegado en Azure App Service, expuesto via APIM.
 
-Will handle real-time notifications via Azure Service Bus + WebSocket.
+### Azure App Service
 
-### Notification flow
+- **Nombre:** `app-milibreria-notifications`
+- **URL:** `app-milibreria-notifications-gybtdzdmfnb2b8ce.centralus-01.azurewebsites.net`
+- **Runtime:** Node 22 LTS, Linux
+- **Health:** `GET /health` → `{ status: "ok", service: "api-notifications" }`
 
-Trigger event (e.g. book added) → MS-1 or MS-2 publishes to Azure Service Bus → MS-3:
-1. Reads message from queue
-2. Persists notification to DB
-3. Emits real-time event via WebSocket to frontend
+### Commands
 
-### Checklist de implementación (incluye certificados)
+```bash
+cd microservicios/api-notifications
+npm start    # node server.js (production)
+```
 
-1. Crear proyecto FastAPI en `microservicios/ms3-python/`
-2. Agregar middleware `verify_apim_cert` (ver sección Certificados arriba)
-3. Crear Azure App Service para MS-3
-4. En Azure Portal: **Configuration → General settings → Client certificate mode → Allow**
-5. En Azure Portal: **Configuration → Application settings → `APIM_CERT_THUMBPRINT`** (mismo valor que MS-1 y MS-2)
-6. Crear certificado `readflow-ms3-server` en Key Vault (`readflow-kv`)
-7. Actualizar APIM policy — agregar `<when>` para el path de notificaciones con el backend-id de MS-3
-8. Configurar GitHub Actions `deploy-ms3.yml`
+### Environment Variables
+
+```
+PORT=8080
+SIGNALR_CONNECTION_STRING=Endpoint=https://...
+SIGNALR_HUB_NAME=notifications
+SQL_CONNECTION_STRING=Server=tcp:...
+APIM_CERT_THUMBPRINT=11E5BC9270C6FC8224A65300B1D2F2A6DA67887B
+NODE_ENV=production
+```
+
+### Structure
+
+```
+api-notifications/
+├── certAuth.js      # Valida X-ARR-ClientCert header, omite /health
+├── server.js        # Express app + todas las rutas
+├── package.json
+└── .deployment      # SCM_DO_BUILD_DURING_DEPLOYMENT=true
+```
+
+### Endpoints — 5 operations
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| GET | `/health` | Health check, sin validación de cert |
+| POST | `/notifications/negotiate` | Genera token SignalR para el cliente |
+| POST | `/notifications/test-send` | Envía notificación de prueba via SignalR |
+| POST | `/books/:id/like` | Toggle like — persiste en SQL, notifica via SignalR |
+| GET | `/books/:id/like-status` | Retorna `{ liked, likesCount }` |
+
+### Database — Azure SQL Server (misma instancia que MS-1)
+
+```sql
+CREATE TABLE dbo.BookLikes (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    book_id INT NOT NULL,
+    actor_user_id NVARCHAR(100) NOT NULL,
+    actor_name NVARCHAR(150),
+    created_at DATETIME DEFAULT GETUTCDATE(),
+    UNIQUE (book_id, actor_user_id)
+);
+
+CREATE TABLE dbo.Notifications (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    recipient_user_id NVARCHAR(100) NOT NULL,
+    actor_user_id NVARCHAR(100),
+    actor_name NVARCHAR(150),
+    book_id INT,
+    type NVARCHAR(50),
+    message NVARCHAR(500),
+    is_read BIT DEFAULT 0,
+    created_at DATETIME DEFAULT GETUTCDATE()
+);
+```
+
+### SignalR Flow
+
+1. Frontend llama `POST /notifications/negotiate` con `{ userId }`
+2. MS-3 genera JWT firmado con la AccessKey de SignalR y retorna `{ url, accessToken }`
+3. Frontend conecta al hub de SignalR con ese token
+4. Cuando alguien da like: MS-3 llama `sendToUser(recipientUserId, "notificationReceived", payload)`
+5. Frontend recibe el evento `notificationReceived` en tiempo real
+
+### CI/CD
+
+GitHub Actions: `.github/workflows/deploy-ms3.yml`
+- Trigger: push a `main` tocando `microservicios/api-notifications/**`, o manual `workflow_dispatch`
+- Secret requerido: `AZURE_WEBAPP_PUBLISH_PROFILE_MS3`
 
 ---
 
@@ -497,21 +554,22 @@ Frontend (React)
       ↓
    APIM (Ocp-Apim-Subscription-Key + apim-client-cert → backends)
       ↓              ↓              ↓
-MS-1 Functions  MS-2 Node.js   MS-3 Python FastAPI
-Books CRUD      Users +        Notifications
-File/Cover URLs ReadingProgress (Pendiente)
+MS-1 Functions  MS-2 Node.js   MS-3 Node.js
+Books CRUD      Users +        Notifications + Likes
+File/Cover URLs ReadingProgress SignalR real-time
                 Favorites
       ↓              ↓              ↓
-  Azure SQL    Cosmos DB       Service Bus
-  (Activo)     (Activo)        (Pendiente)
+  Azure SQL    Cosmos DB       Azure SQL + SignalR
+  (Activo)     (Activo)        (Activo)
 ```
 
 ### APIM — Estado de endpoints
 
 | Endpoint | Estado | Backend |
 |---|---|---|
-| `/books*` | Real — MS-1 | `func-milibreria-api` |
-| `/users*` | Real — MS-2 | `readflow-ms2` |
-| `/reading-progress*` | Real — MS-2 | `readflow-ms2` |
-| `/favorites*` | Real — MS-2 | `readflow-ms2` |
-| `/notifications*` | Pendiente — MS-3 | por crear |
+| `/books*` (sin like) | Real — MS-1 | `ms1-functions` |
+| `/users*` | Real — MS-2 | `ms2-nodejs` |
+| `/reading-progress*` | Real — MS-2 | `ms2-nodejs` |
+| `/favorites*` | Real — MS-2 | `ms2-nodejs` |
+| `/notifications*` | Real — MS-3 | `ms3-notifications` |
+| `/books/:id/like*` | Real — MS-3 | `ms3-notifications` |

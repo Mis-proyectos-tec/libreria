@@ -6,10 +6,13 @@ import {
   getReadingProgress,
   getFavorites,
 } from "../services/booksService.js";
+import { useAuth } from "./authContext.jsx";
 
 const AppDataContext = createContext();
 
 export function AppDataProvider({ children }) {
+  const { currentUser } = useAuth();
+
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [books, setBooks] = useState([]);
@@ -20,6 +23,8 @@ export function AppDataProvider({ children }) {
   const [error, setError] = useState("");
 
   async function loadAppData() {
+    const userId = currentUser?.id;
+
     try {
       setLoading(true);
       setError("");
@@ -29,13 +34,12 @@ export function AppDataProvider({ children }) {
           getUsers(),
           getCategories(),
           getBooks(),
-          getReadingProgress(),
-          getFavorites(),
+          userId ? getReadingProgress(userId) : Promise.resolve([]),
+          userId ? getFavorites(userId) : Promise.resolve([]),
         ]);
 
       const val = (r) => (r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []);
 
-      // Normalizar campos: asegurar consistencia en IDs y nombres de blob
       const normalizeBooks = (booksArray) => {
         return booksArray.map((book) => ({
           ...book,
@@ -61,13 +65,9 @@ export function AppDataProvider({ children }) {
         }));
       };
 
-      const normalizedBooks = normalizeBooks(val(booksRes));
-      console.log("Books from API:", val(booksRes));
-      console.log("Normalized books:", normalizedBooks);
-
       setUsers(val(usersRes));
       setCategories(val(categoriesRes));
-      setBooks(normalizedBooks);
+      setBooks(normalizeBooks(val(booksRes)));
       setReadingProgress(normalizeProgress(val(progressRes)));
       setFavorites(normalizeFavorites(val(favoritesRes)));
     } catch (err) {
@@ -80,7 +80,7 @@ export function AppDataProvider({ children }) {
 
   useEffect(() => {
     loadAppData();
-  }, []);
+  }, [currentUser?.id]);
 
   return (
     <AppDataContext.Provider

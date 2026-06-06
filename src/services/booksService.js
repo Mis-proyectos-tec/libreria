@@ -244,9 +244,8 @@ export function deleteBook(id) {
 }
 
 /* READING PROGRESS */
-export function getReadingProgress(userId) {
-  const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
-  return apiRequest(`/reading-progress${query}`, { method: "GET" });
+export function getReadingProgress() {
+  return apiRequest("/reading-progress", { method: "GET" });
 }
 
 export function getReadingProgressById(id) {
@@ -272,9 +271,8 @@ export function deleteReadingProgress(id) {
 }
 
 /* FAVORITES */
-export function getFavorites(userId) {
-  const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
-  return apiRequest(`/favorites${query}`, { method: "GET" });
+export function getFavorites() {
+  return apiRequest("/favorites", { method: "GET" });
 }
 
 export function getFavoriteById(id) {

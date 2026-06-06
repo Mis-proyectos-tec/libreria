@@ -34,8 +34,8 @@ export function AppDataProvider({ children }) {
           getUsers(),
           getCategories(),
           getBooks(),
-          userId ? getReadingProgress(userId) : Promise.resolve([]),
-          userId ? getFavorites(userId) : Promise.resolve([]),
+          getReadingProgress(),
+          getFavorites(),
         ]);
 
       const val = (r) => (r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []);

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppData } from "../context/appDataContext.jsx";
 import { getBookCoverUrl } from "../services/booksService.js";
@@ -21,32 +21,19 @@ export default function PerfilUsuarioPage() {
     return books.filter((b) => String(b.userId) === String(usuario.id));
   }, [books, usuario]);
 
-  const librosEnProces = [];
-  const librosDeterminados = [];
-
-  async function loadCoverUrls() {
-    const allBooks = [...librosSubidos, ...librosEnProces.map((p) => books.find((b) => String(b.id) === String(p.bookId))).filter(Boolean), ...librosDeterminados.map((p) => books.find((b) => String(b.id) === String(p.bookId))).filter(Boolean)];
+  useEffect(() => {
+    if (librosSubidos.length === 0) return;
     const covers = {};
-    await Promise.all(
-      allBooks.map(async (book) => {
-        if (!book) return;
+    Promise.all(
+      librosSubidos.map(async (book) => {
+        if (!book.cover_blob_name && !book.coverBlobName) return;
         try {
-          if (!book.cover_blob_name && !book.coverBlobName) return;
           const response = await getBookCoverUrl(book.id);
           if (response?.coverUrl) covers[book.id] = response.coverUrl;
-        } catch (err) {
-          console.warn(`No se pudo cargar la portada del libro ${book.id}`, err);
-        }
+        } catch {}
       })
-    );
-    setCoverUrls(covers);
-  }
-
-  useMemo(() => {
-    if (librosSubidos.length > 0 || librosEnProces.length > 0 || librosDeterminados.length > 0) {
-      loadCoverUrls();
-    }
-  }, [librosSubidos, librosEnProces, librosDeterminados]);
+    ).then(() => setCoverUrls(covers));
+  }, [librosSubidos]);
 
   function getCoverImage(book) {
     return coverUrls[book.id] || book.coverUrl || "/assets/defaultBook.png";

@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## Estado Actual del Proyecto (2026-06-05)
+## Estado Actual del Proyecto (2026-06-06)
 
 ### Completado
 
@@ -34,7 +34,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] **MS-3 Node.js + Express desplegado en Azure App Service (`app-milibreria-notifications`)**
 - [x] MS-3 — Notificaciones en tiempo real via Azure SignalR Service
 - [x] MS-3 — Book likes con persistencia en Azure SQL Server (`dbo.BookLikes`, `dbo.Notifications`)
-- [x] MS-3 — `certAuth.js` middleware validando `X-ARR-ClientCert` thumbprint
+- [x] MS-3 — `certAuth.js` + `jwtAuth.js` middlewares (cert thumbprint + JWT Bearer)
+- [x] **JWT auth flow** — Firebase idToken intercambiado por app JWT via `POST /auth/token` (MS-2); JWT almacenado en localStorage y usado en todos los requests a MS-2 y MS-3
+- [x] **Per-page data loading** — eliminado AppDataProvider global; cada página carga solo los datos que necesita con hooks propios + AbortController
+- [x] **Paginación** — componente `Pagination` en todas las grids de libros (5 por página)
+- [x] **Navegación con `from` state** — botón "Volver" en detalleLibroPage y lecturaPage regresa a la página de origen
+- [x] Dark mode eliminado de lecturaPage
+- [x] Carga de usuarios eliminada del frontend (no se muestra "Subido por" en ninguna página)
 
 ### Pendiente
 
@@ -66,11 +72,12 @@ Esta sección documenta la implementación completa de certificados. Está imple
 
 ```
 Cliente (Frontend/Postman)
-        ↓  Ocp-Apim-Subscription-Key
+        ↓  Ocp-Apim-Subscription-Key + Authorization: Bearer <JWT>
       APIM
         ↓  presenta apim-client-cert (mTLS)
    MS-1 / MS-2 / MS-3
         validan thumbprint via X-ARR-ClientCert header
+        MS-2 y MS-3 también validan JWT Bearer (excepto /health y /auth/token)
 ```
 
 ### Certificados en Azure Key Vault (`readflow-kv`)
@@ -131,45 +138,12 @@ Cliente (Frontend/Postman)
 </policies>
 ```
 
-**Policy de operación (patrón para todas las operaciones):**
-```xml
-<policies>
-    <inbound>
-        <base />
-        <set-backend-service backend-id="ms3-notifications" />
-    </inbound>
-    <backend><base /></backend>
-    <outbound><base /></outbound>
-    <on-error><base /></on-error>
-</policies>
-```
-Cambiar `backend-id` según el microservicio: `ms1-functions`, `ms2-nodejs` o `ms3-notifications`.
-
 ### Configuración Azure Portal por backend
 
 Para cada App Service / Function App:
 1. **Configuration → General settings → Client certificate mode → Allow**
-   - `readflow-ms2` ✅
-   - `func-milibreria-api` ✅
-   - `app-milibreria-notifications` ✅
-
 2. **Configuration → Application settings → `APIM_CERT_THUMBPRINT`**
-   - Valor: `11E5BC9270C6FC8224A65300B1D2F2A6DA67887B` (thumbprint de `apim-client-cert`)
-   - `readflow-ms2` ✅
-   - `func-milibreria-api` ✅
-   - `app-milibreria-notifications` ✅
-
-### Implementación en código
-
-**Cómo funciona:** Azure App Service pasa el certificado cliente al app via el header `X-ARR-ClientCert` (base64 DER). El código calcula el SHA-1 del DER y lo compara contra `APIM_CERT_THUMBPRINT`.
-
-Si `APIM_CERT_THUMBPRINT` no está configurado (desarrollo local), la validación se omite automáticamente.
-
-**MS-2 (Express)** — middleware en `src/middleware/certAuth.js`, registrado en `app.js` antes de las rutas. El endpoint `/health` está excluido.
-
-**MS-1 (Azure Functions)** — utilidad en `src/functions/certAuth.js`, llamada al inicio de cada handler con `const certError = checkApimCert(request); if (certError) return certError;`. El health check no tiene validación.
-
-**MS-3 (Express)** — middleware en `certAuth.js` en la raíz del proyecto, registrado en `server.js` con `app.use(certAuth)` antes de las rutas. El endpoint `/health` está excluido.
+   - Valor: `11E5BC9270C6FC8224A65300B1D2F2A6DA67887B`
 
 ---
 
@@ -201,47 +175,81 @@ VITE_FIREBASE_APP_ID=...
 
 Vite must be restarted after `.env` changes.
 
-### Authentication — Firebase Auth
+### Authentication — Firebase + JWT
 
-Auth is handled by Firebase, NOT the Azure API. Flow:
+Flow completo:
 
-1. `signInWithEmailAndPassword` → Firebase verifies credentials
-2. `onAuthStateChanged` fires → fetches all users from Azure API
-3. Matches by `firebaseUid` → sets `currentUser` with merged data
-4. `currentUser` = `{ ...azureApiUser, uid: firebaseUser.uid }`
+1. `signInWithEmailAndPassword` → Firebase verifica credenciales
+2. `onAuthStateChanged` fires → `exchangeFirebaseToken(firebaseUser)`
+3. `POST /auth/token` con `{ idToken }` (Firebase ID token) → MS-2 verifica contra Firebase Identity Toolkit
+4. MS-2 devuelve `{ token, user }` — `token` es un JWT firmado con `JWT_SECRET` (`sub = user.id`)
+5. `setToken(token)` guarda el JWT en localStorage (`readflow_token`)
+6. `setCurrentUser({ ...user, uid: firebaseUser.uid })` — `user.id` es el Cosmos DB ObjectId string
+7. Todos los requests a MS-2 y MS-3 incluyen `Authorization: Bearer <token>`
 
-**Critical:** Azure API `GET /users` must return `firebaseUid` on every user object — without it login always fails.
+**Critical:** `JWT_SECRET` debe estar configurado igual en MS-2 (firma) y MS-3 (verifica).
 
 Auth functions exposed from `AuthContext` (`src/context/authContext.jsx`):
 
 | Function | What it touches |
 |---|---|
 | `login(email, password)` | Firebase only |
-| `register(name, username, email, password)` | Firebase + Azure API POST /users |
-| `logout()` | Firebase only |
-| `updateProfileName(name)` | Azure API only (also updates `initials`) |
-| `updateProfileUsername(username)` | Azure API only |
-| `updateProfileEmail(currentPassword, newEmail)` | Firebase + Azure API |
-| `updateProfilePassword(currentPassword, newPassword)` | Firebase only |
+| `register(name, username, email, password)` | Firebase + MS-2 POST /users + exchange token |
+| `logout()` | Firebase + clearToken() |
+| `updateProfileName(name)` | MS-2 PUT /users/:id |
+| `updateProfileUsername(username)` | MS-2 PUT /users/:id |
+| `updateProfileEmail(currentPassword, newEmail)` | Firebase reauth + MS-2 |
+| `updateProfilePassword(currentPassword, newPassword)` | Firebase reauth only |
 
-Reauthentication with `EmailAuthProvider.credential` is required before updating email or password.
+Token helpers en `src/services/authToken.js`: `getToken()`, `setToken()`, `clearToken()` — usan localStorage key `readflow_token`.
 
 ### Context Layer
 
-Two providers wrap the app (`src/main.jsx`):
+Solo un provider envuelve la app (`src/main.jsx`) — **React.StrictMode eliminado** (causaba double useEffect en dev):
 
-- **`AuthProvider`** — Firebase session + Azure user profile. Renders `{!loadingAuth && children}` so nothing renders until Firebase resolves the session (prevents white screen on reload).
-- **`AppDataProvider`** — bulk-fetches books, categories, reading-progress, favorites on mount via `Promise.all`. Exposes `reloadAppData()` for post-mutation refresh.
+```jsx
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <BrowserRouter>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </BrowserRouter>
+);
+```
+
+- **`AuthProvider`** — Firebase session + JWT + perfil de usuario. Renders `{!loadingAuth && children}`.
+- **`AppDataProvider` eliminado** — ya no existe en el árbol. Cada página carga sus propios datos.
+
+### Per-Page Data Hooks (`src/hooks/`)
+
+Cada página carga solo lo que necesita. Todos usan AbortController para cancelar requests al navegar:
+
+| Hook | Datos | AbortController |
+|---|---|---|
+| `useBooks()` | GET /books | Sí |
+| `useCategories()` | mock local (no request real) | No |
+| `useFavorites()` | GET /favorites | Sí |
+| `useReadingProgress()` | GET /reading-progress | Sí |
+
+Requests por página:
+- `/home` → books + favorites + reading-progress
+- `/biblioteca` → books + categories + favorites
+- `/explorar-libros` → books + favorites
+- `/detalle-libro` → books + favorites + reading-progress + cover-url
+- `/lectura` → books + reading-progress + file-url
+- `/admin-libros` → books + categories + reading-progress
+- `/perfil` → cero requests (usa `currentUser` del auth)
 
 ### Service Layer
 
-- `src/services/booksService.js` — API calls for books, categories, reading-progress, favorites, users. Single `apiRequest()` helper prepends `VITE_API_BASE_URL` and attaches the subscription key.
-- `src/services/usersService.js` — CRUD for users (used by `authContext.jsx`). Only user service in the app.
-- `src/firebase.js` — initializes Firebase app and exports `auth`.
+- `src/services/booksService.js` — API calls para books, categories (mock), reading-progress, favorites. `getBooks(signal)`, `getFavorites(signal)`, `getReadingProgress(signal)` aceptan AbortController signal.
+- `src/services/notificationsService.js` — SignalR connection + like/like-status. `getToken()` incluido en todos los headers via `Authorization: Bearer`.
+- `src/services/authToken.js` — getToken/setToken/clearToken en localStorage.
+- `src/firebase.js` — inicializa Firebase app y exporta `auth`.
 
 ### Routing (`src/App.jsx`)
 
-Routes guarded inline with `isAuthenticated`. `/registro` is public.
+Routes guarded inline con `isAuthenticated`. `/registro` es público. Todos los imports son estáticos (no lazy loading — fue probado y revertido).
 
 | Path | Page |
 |---|---|
@@ -249,23 +257,50 @@ Routes guarded inline with `isAuthenticated`. `/registro` is public.
 | `/registro` | `registroPage.jsx` |
 | `/home` | `homePage.jsx` |
 | `/biblioteca` | `bibliotecaPage.jsx` |
-| `/favoritos` | `favoritosPage.jsx` |
+| `/explorar-libros` | `explorarLibrosPage.jsx` |
 | `/perfil` | `perfilPage.jsx` |
-| `/detalle-libro` | `detalleLibroPage.jsx` — receives `libroId` via `location.state` |
-| `/lectura` | `lecturaPage.jsx` — receives `libroId` via `location.state` |
+| `/detalle-libro` | `detalleLibroPage.jsx` — recibe `libroId` + `from` via `location.state` |
+| `/lectura` | `lecturaPage.jsx` — recibe `libroId` + `from` via `location.state` |
 | `/admin-libros` | `adminLibrosPage.jsx` |
 | `/nuevo-libro` | `formLibroPage.jsx` |
-| `/editar-libro` | `formLibroPage.jsx` (edit mode, receives `libroId` via `location.state`) |
+| `/editar-libro` | `formLibroPage.jsx` (edit mode, recibe `libroId` via `location.state`) |
 
-Navigation between detail views uses `navigate("/route", { state: { libroId } })` — no URL params.
+### Navegación con `from` state
 
-### Reading Progress and Favorites
+Para que el botón "Volver" regrese a la página correcta, cada página pasa `from` al navegar:
 
-Fully migrated to MS-2 API (no longer uses localStorage):
-- `lecturaPage.jsx` — calls `createReadingProgress` / `updateReadingProgress`, then `reloadAppData()`
-- `detalleLibroPage.jsx` — calls `createFavorite` / `deleteFavorite`, then `reloadAppData()`
-- `favoritosPage.jsx` — reads from `AppDataProvider.favorites`, calls `deleteFavorite`
-- `miBibliotecaPage.jsx` — reads from `AppDataProvider.favorites` filtered by `currentUser.id`
+```js
+// homePage → detalle
+navigate("/detalle-libro", { state: { libroId: book.id, from: "/home" } })
+
+// homePage → lectura (continuar leyendo)
+navigate("/lectura", { state: { libroId: book.id, from: "/home" } })
+
+// bibliotecaPage → detalle
+navigate("/detalle-libro", { state: { libroId: book.id, from: "/biblioteca" } })
+```
+
+`detalleLibroPage` usa `location.state?.from || "/explorar-libros"` en el botón Volver y al eliminar libro.
+`lecturaPage` usa `location.state?.from` — si existe navega directo, si no va a detalle-libro.
+
+### Paginación
+
+Componente `src/components/Pagination.jsx` — no se muestra si `totalPages <= 1`.
+
+`PAGE_SIZE = 5` en todas las páginas. Aplicado en:
+- `homePage` — "Continúa tus lecturas" y "Mi biblioteca"
+- `explorarLibrosPage` — "Subidos por mí" y "De la comunidad" (paginaciones independientes)
+- `bibliotecaPage` — "Mis libros" y "Libros guardados" (paginaciones independientes)
+- `adminLibrosPage` — tabla de libros (resetea a página 1 al cambiar filtros)
+
+### Book Cards — Tamaño uniforme
+
+Todas las cards (`.bookCard` y `.explorCard`) tienen:
+- Imagen: `aspect-ratio: 3/4`
+- Body: `height: 180px; overflow: hidden`
+- Título: `-webkit-line-clamp: 2`
+- Autor: `text-overflow: ellipsis` (1 línea)
+- Botón: `margin-top: auto` (siempre al fondo del body)
 
 ### Azure API — User Object Schema
 
@@ -281,14 +316,14 @@ Fully migrated to MS-2 API (no longer uses localStorage):
 }
 ```
 
-`password` is always empty — Firebase handles authentication.
-`id` is a Cosmos DB ObjectId string (not a numeric mock ID).
+`password` siempre vacío — Firebase maneja la autenticación.
+`id` es un Cosmos DB ObjectId string. Este mismo ID es el `sub` del JWT y el `nameid` del token SignalR.
 
 ---
 
 ## MS-1 — `api-functions/`
 
-Azure Functions (Node.js) for Books CRUD, file/cover URLs, and file uploads. Uses SQL Server backend.
+Azure Functions (Node.js) para Books CRUD, file/cover URLs y file uploads. Usa SQL Server.
 
 ### Azure Function App
 
@@ -321,7 +356,7 @@ api-functions/
 ├── host.json
 ├── package.json
 └── src/functions/
-    ├── certAuth.js           # Utilidad de validación de certificado (checkApimCert)
+    ├── certAuth.js           # checkApimCert() — valida X-ARR-ClientCert
     ├── books.js              # GET/POST /api/books + GET/PUT/DELETE /api/books/{id}
     ├── bookFileUrl.js        # GET /api/books/{id}/file-url (PDF SAS)
     ├── bookCoverUrl.js       # GET /api/books/{id}/cover-url (Cover SAS)
@@ -364,15 +399,11 @@ CREATE TABLE dbo.Books (
 );
 ```
 
-### CI/CD
-
-Manual deployment via VS Code Azure Extensions or `func azure functionapp publish`.
-
 ---
 
 ## MS-2 — `microservicios/ms2-nodejs/`
 
-Node.js + Express microservice for Users, Reading Progress and Favorites. Deployed to Azure App Service, exposed via APIM.
+Node.js + Express microservice para Users, Auth JWT, Reading Progress y Favorites.
 
 ### Azure App Service
 
@@ -389,77 +420,81 @@ npm run dev    # nodemon (development)
 npm start      # node server.js (production)
 ```
 
-### Environment Variables (`microservicios/ms2-nodejs/.env`)
+### Environment Variables
 
 ```
 PORT=3000
 COSMOS_CONNECTION_STRING=mongodb://...
 APIM_CERT_THUMBPRINT=<thumbprint de apim-client-cert>
+JWT_SECRET=<mismo valor que MS-3>
+FIREBASE_API_KEY=<Firebase Web API Key>
 ```
 
 ### Structure
 
 ```
 ms2-nodejs/
-├── app.js                        # Express + certAuth middleware + route registration
-├── server.js                     # entry point, connects DB then starts server
+├── app.js                        # Express + certAuth + jwtAuth + routes
+├── server.js                     # entry point
 └── src/
     ├── config/db.js
     ├── middleware/
-    │   └── certAuth.js           # Valida X-ARR-ClientCert header, omite /health
+    │   ├── certAuth.js           # Valida X-ARR-ClientCert, omite /health
+    │   └── jwtAuth.js            # Valida Bearer JWT, omite /health y /auth/token
     ├── models/
     │   ├── User.js
     │   ├── ReadingProgress.js
     │   └── Favorite.js
     ├── controllers/
+    │   ├── authController.js     # POST /auth/token — intercambia Firebase idToken por JWT
     │   ├── userController.js
     │   ├── readingProgressController.js
     │   └── favoriteController.js
     └── routes/
+        ├── authRoutes.js
         ├── userRoutes.js
         ├── readingProgressRoutes.js
         └── favoriteRoutes.js
 ```
 
-### Endpoints — 14 operations
+### Endpoints — 15 operations
 
-| Method | Endpoint | Notes |
-|---|---|---|
-| GET | `/users` | Used by authContext on every login |
-| GET | `/users/:id` | |
-| POST | `/users` | Called on register — must save `firebaseUid` |
-| PUT | `/users/:id` | Returns full updated object |
-| DELETE | `/users/:id` | Returns `{ message, userId }` |
-| GET | `/reading-progress` | |
-| GET | `/reading-progress/:id` | |
-| POST | `/reading-progress` | |
-| PUT | `/reading-progress/:id` | Auto-updates `updatedAt` |
-| DELETE | `/reading-progress/:id` | |
-| GET | `/favorites` | |
-| GET | `/favorites/:id` | |
-| POST | `/favorites` | |
-| DELETE | `/favorites/:id` | |
+| Method | Endpoint | Auth | Notes |
+|---|---|---|---|
+| POST | `/auth/token` | cert only | Recibe `{ idToken }` Firebase, devuelve `{ token, user }` |
+| GET | `/users` | cert + JWT | |
+| GET | `/users/:id` | cert + JWT | |
+| POST | `/users` | cert + JWT | Registra usuario, debe guardar `firebaseUid` |
+| PUT | `/users/:id` | cert + JWT | Returns full updated object |
+| DELETE | `/users/:id` | cert + JWT | Returns `{ message, userId }` |
+| GET | `/reading-progress` | cert + JWT | |
+| GET | `/reading-progress/:id` | cert + JWT | |
+| POST | `/reading-progress` | cert + JWT | |
+| PUT | `/reading-progress/:id` | cert + JWT | Auto-updates `updatedAt` |
+| DELETE | `/reading-progress/:id` | cert + JWT | |
+| GET | `/favorites` | cert + JWT | |
+| GET | `/favorites/:id` | cert + JWT | |
+| POST | `/favorites` | cert + JWT | |
+| DELETE | `/favorites/:id` | cert + JWT | |
 
 ### Database — Azure Cosmos DB for MongoDB (Serverless)
 
 Database: `ms2db`. Collections: `users`, `readingprogresses`, `favorites`.
 
-All models use `toJSON` transform: exposes `id` (string), removes `_id` and `__v`.
-`ReadingProgress` and `Favorite` have unique compound indexes on `(userId, bookId)`.
-
-`GET /users` must return `firebaseUid` — this is how `authContext` matches Firebase sessions to Azure profiles.
+Todos los modelos usan `toJSON` transform: expone `id` (string), elimina `_id` y `__v`.
+`ReadingProgress` y `Favorite` tienen unique compound indexes en `(userId, bookId)`.
 
 ### CI/CD
 
 GitHub Actions: `.github/workflows/deploy-ms2.yml`
-- Trigger: push to `main` touching `microservicios/ms2-nodejs/**`, or manual `workflow_dispatch`
-- Secret required: `AZURE_WEBAPP_PUBLISH_PROFILE_MS2`
+- Trigger: push a `main` tocando `microservicios/ms2-nodejs/**`, o `workflow_dispatch`
+- Secret: `AZURE_WEBAPP_PUBLISH_PROFILE_MS2`
 
 ---
 
 ## MS-3 — `microservicios/api-notifications/`
 
-Node.js + Express microservice para notificaciones en tiempo real y book likes. Desplegado en Azure App Service, expuesto via APIM.
+Node.js + Express microservice para notificaciones en tiempo real y book likes.
 
 ### Azure App Service
 
@@ -483,6 +518,7 @@ SIGNALR_CONNECTION_STRING=Endpoint=https://...
 SIGNALR_HUB_NAME=notifications
 SQL_CONNECTION_STRING=Server=tcp:...
 APIM_CERT_THUMBPRINT=11E5BC9270C6FC8224A65300B1D2F2A6DA67887B
+JWT_SECRET=<mismo valor que MS-2>
 NODE_ENV=production
 ```
 
@@ -490,7 +526,8 @@ NODE_ENV=production
 
 ```
 api-notifications/
-├── certAuth.js      # Valida X-ARR-ClientCert header, omite /health
+├── certAuth.js      # Valida X-ARR-ClientCert, omite /health
+├── jwtAuth.js       # Valida Bearer JWT (sub→req.user.id), omite /health
 ├── server.js        # Express app + todas las rutas
 ├── package.json
 └── .deployment      # SCM_DO_BUILD_DURING_DEPLOYMENT=true
@@ -498,13 +535,13 @@ api-notifications/
 
 ### Endpoints — 5 operations
 
-| Method | Endpoint | Notes |
-|---|---|---|
-| GET | `/health` | Health check, sin validación de cert |
-| POST | `/notifications/negotiate` | Genera token SignalR para el cliente |
-| POST | `/notifications/test-send` | Envía notificación de prueba via SignalR |
-| POST | `/books/:id/like` | Toggle like — persiste en SQL, notifica via SignalR |
-| GET | `/books/:id/like-status` | Retorna `{ liked, likesCount }` |
+| Method | Endpoint | Auth | Notes |
+|---|---|---|---|
+| GET | `/health` | none | Health check |
+| POST | `/notifications/negotiate` | cert + JWT | Genera SignalR token con `nameid = req.user.id` |
+| POST | `/notifications/test-send` | cert + JWT | Envía notificación de prueba |
+| POST | `/books/:id/like` | cert + JWT | Toggle like — no permite self-like (400) |
+| GET | `/books/:id/like-status` | cert + JWT | Retorna `{ liked, likesCount }` |
 
 ### Database — Azure SQL Server (misma instancia que MS-1)
 
@@ -533,17 +570,20 @@ CREATE TABLE dbo.Notifications (
 
 ### SignalR Flow
 
-1. Frontend llama `POST /notifications/negotiate` con `{ userId }`
-2. MS-3 genera JWT firmado con la AccessKey de SignalR y retorna `{ url, accessToken }`
-3. Frontend conecta al hub de SignalR con ese token
-4. Cuando alguien da like: MS-3 llama `sendToUser(recipientUserId, "notificationReceived", payload)`
-5. Frontend recibe el evento `notificationReceived` en tiempo real
+1. Frontend llama `POST /notifications/negotiate` con `Authorization: Bearer <JWT>`
+2. `jwtAuth` valida el JWT → `req.user.id = payload.sub` (Cosmos DB user ID)
+3. MS-3 genera SignalR JWT con `nameid = req.user.id` y devuelve `{ url, accessToken, userId, hub }`
+4. Frontend conecta al hub con `skipNegotiation: true` (WebSockets directo)
+5. `accessTokenFactory` en el cliente hace una segunda llamada a negotiate para token fresco (con try/catch fallback al token inicial)
+6. Cuando alguien da like: MS-3 llama `sendToUser(book.user_id, "notificationReceived", payload)`
+7. `book.user_id` debe coincidir con el `nameid` del token SignalR del destinatario (ambos son el Cosmos DB ID)
+8. **Importante:** Un usuario no puede dar like a su propio libro (MS-3 retorna 400)
 
 ### CI/CD
 
 GitHub Actions: `.github/workflows/deploy-ms3.yml`
-- Trigger: push a `main` tocando `microservicios/api-notifications/**`, o manual `workflow_dispatch`
-- Secret requerido: `AZURE_WEBAPP_PUBLISH_PROFILE_MS3`
+- Trigger: push a `main` tocando `microservicios/api-notifications/**`, o `workflow_dispatch`
+- Secret: `AZURE_WEBAPP_PUBLISH_PROFILE_MS3`
 
 ---
 
@@ -555,8 +595,9 @@ Frontend (React)
    APIM (Ocp-Apim-Subscription-Key + apim-client-cert → backends)
       ↓              ↓              ↓
 MS-1 Functions  MS-2 Node.js   MS-3 Node.js
-Books CRUD      Users +        Notifications + Likes
-File/Cover URLs ReadingProgress SignalR real-time
+Books CRUD      Auth JWT +     Notifications + Likes
+File/Cover URLs Users +        SignalR real-time
+                ReadingProgress
                 Favorites
       ↓              ↓              ↓
   Azure SQL    Cosmos DB       Azure SQL + SignalR
@@ -568,6 +609,7 @@ File/Cover URLs ReadingProgress SignalR real-time
 | Endpoint | Estado | Backend |
 |---|---|---|
 | `/books*` (sin like) | Real — MS-1 | `ms1-functions` |
+| `/auth*` | Real — MS-2 | `ms2-nodejs` |
 | `/users*` | Real — MS-2 | `ms2-nodejs` |
 | `/reading-progress*` | Real — MS-2 | `ms2-nodejs` |
 | `/favorites*` | Real — MS-2 | `ms2-nodejs` |

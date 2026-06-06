@@ -67,11 +67,21 @@ export async function startNotificationsConnection(
 
   connection = new signalR.HubConnectionBuilder()
     .withUrl(negotiateData.url, {
-      accessTokenFactory: () => negotiateData.accessToken,
+      accessTokenFactory: async () => {
+        const resp = await fetch(`${API_BASE_URL}/notifications/negotiate`, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ userId }),
+        });
+        if (!resp.ok) return negotiateData.accessToken;
+        const fresh = await resp.json();
+        return fresh.accessToken || negotiateData.accessToken;
+      },
       transport: signalR.HttpTransportType.WebSockets,
       skipNegotiation: true,
     })
     .withAutomaticReconnect()
+    .configureLogging(signalR.LogLevel.Warning)
     .build();
 
   connection.on("notificationReceived", (notification) => {
@@ -130,7 +140,6 @@ export async function toggleBookLike(bookId, actorUser) {
   const actorName =
     actorUser?.name ||
     actorUser?.username ||
-    actorUser?.email ||
     "Un usuario";
 
   if (!actorUserId) {

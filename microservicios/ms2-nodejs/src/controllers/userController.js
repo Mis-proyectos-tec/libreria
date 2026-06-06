@@ -63,4 +63,14 @@ async function getByFirebaseUid(req, res) {
   }
 }
 
-module.exports = { getAll, getById, getByFirebaseUid, create, update, remove };
+async function getMe(req, res) {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+module.exports = { getAll, getById, getByFirebaseUid, getMe, create, update, remove };

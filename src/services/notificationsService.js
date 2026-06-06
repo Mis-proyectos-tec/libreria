@@ -51,23 +51,27 @@ export async function startNotificationsConnection(onNotificationReceived) {
     throw new Error(`Negotiate falló con estado ${negotiateResponse.status}`);
   }
 
-  const negotiateData = await negotiateResponse.json();
+  const { url, accessToken } = await negotiateResponse.json();
 
-  if (!negotiateData?.url || !negotiateData?.accessToken) {
+  if (!url || !accessToken) {
     throw new Error("Negotiate no devolvió url o accessToken.");
   }
 
   connection = new signalR.HubConnectionBuilder()
-    .withUrl(negotiateData.url, {
+    .withUrl(url, {
       accessTokenFactory: async () => {
-        const resp = await fetch(`${API_BASE_URL}/notifications/negotiate`, {
-          method: "POST",
-          headers: getHeaders(),
-          body: JSON.stringify({}),
-        });
-        if (!resp.ok) return negotiateData.accessToken;
-        const fresh = await resp.json();
-        return fresh.accessToken || negotiateData.accessToken;
+        try {
+          const resp = await fetch(`${API_BASE_URL}/notifications/negotiate`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({}),
+          });
+          if (!resp.ok) return accessToken;
+          const fresh = await resp.json();
+          return fresh.accessToken || accessToken;
+        } catch {
+          return accessToken;
+        }
       },
       transport: signalR.HttpTransportType.WebSockets,
       skipNegotiation: true,
@@ -77,9 +81,7 @@ export async function startNotificationsConnection(onNotificationReceived) {
     .build();
 
   connection.on("notificationReceived", (notification) => {
-    if (onNotificationReceived) {
-      onNotificationReceived(notification);
-    }
+    if (onNotificationReceived) onNotificationReceived(notification);
   });
 
   await connection.start();

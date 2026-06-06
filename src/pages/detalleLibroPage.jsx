@@ -249,7 +249,7 @@ export default function DetalleLibroPage() {
 
       await reloadFavorites();
 
-      navigate("/explorar-libros");
+      navigate(location.state?.from || "/explorar-libros");
     } catch {
       alert("No se pudo eliminar el libro.");
     }
@@ -402,7 +402,7 @@ export default function DetalleLibroPage() {
           <div className="detalleActions">
             <button
               className="secondaryButton"
-              onClick={() => navigate("/explorar-libros")}
+              onClick={() => navigate(location.state?.from || "/explorar-libros")}
             >
               Volver
             </button>

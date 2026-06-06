@@ -43,7 +43,6 @@ export default function LecturaPage() {
   const [pageNumber, setPageNumber] = useState(progresoExistente?.currentPage || 1);
   const [savedPage, setSavedPage] = useState(progresoExistente?.currentPage || 1);
   const [scale, setScale] = useState(1.15);
-  const [darkMode, setDarkMode] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
   const [pdfUrl, setPdfUrl] = useState("");
@@ -160,7 +159,7 @@ export default function LecturaPage() {
   if (!book) return <p>Libro no encontrado.</p>;
 
   return (
-    <section className={`lecturaPage ${darkMode ? "lecturaPageDark" : ""}`}>
+    <section className="lecturaPage">
       <div className="readingWrapper">
         <header className="readingHeader">
           <div className="readingHeaderLeft">
@@ -190,13 +189,6 @@ export default function LecturaPage() {
               Zoom +
             </button>
 
-            <button
-              className="toolButton"
-              onClick={() => setDarkMode((prev) => !prev)}
-            >
-              {darkMode ? "☀ Claro" : "🌙 Oscuro"}
-            </button>
-
             <button className="primaryButton" onClick={guardarProgreso}>
               Guardar progreso
             </button>
@@ -223,7 +215,7 @@ export default function LecturaPage() {
           {saveMessage && <p className="saveMessage">{saveMessage}</p>}
         </div>
 
-        <div className={`readingPdfContainer ${darkMode ? "pdfDarkMode" : ""}`}>
+        <div className="readingPdfContainer">
           
         {pdfLoading ? (
           <p>Cargando PDF...</p>

@@ -206,7 +206,7 @@ export default function HomePage() {
             {misBibliotecaLibros.slice(0, 6).map((book) => (
               <div
                 key={book.id}
-                onClick={() => navigate("/detalle-libro", { state: { libroId: book.id } })}
+                onClick={() => navigate("/detalle-libro", { state: { libroId: book.id, from: "/home" } })}
                 style={{ cursor: "pointer" }}
               >
                 <BookCard

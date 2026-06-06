@@ -22,7 +22,9 @@ export default function DetalleLibroPage() {
 
   const { currentUser } = useAuth();
 
-  const { books = [], users = [], loading, error } = useAppData();
+  const { books = [], loading, error, loadBooks } = useAppData();
+
+  useEffect(() => { loadBooks(); }, []);
   const { favorites = [], reloadFavorites } = useFavorites();
   const { readingProgress = [] } = useReadingProgress();
 
@@ -76,29 +78,6 @@ export default function DetalleLibroPage() {
       ) || false
     );
   }, [readingProgress, currentUserId, book]);
-
-  const uploadedByName = useMemo(() => {
-    if (!book) return "Usuario desconocido";
-
-    if (book.uploader_name) {
-      return book.uploader_name;
-    }
-
-    const userId = book.userId || book.user_id;
-
-    if (!userId) return "Usuario desconocido";
-
-    const user = users.find((item) => String(item.id) === String(userId));
-
-    if (!user) return `Usuario ${userId}`;
-
-    return (
-      user.name ||
-      user.fullName ||
-      user.username ||
-      `Usuario ${userId}`
-    );
-  }, [book, users]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
@@ -410,11 +389,6 @@ export default function DetalleLibroPage() {
                   <span>
                     {book.currentStatus || book.current_status || "Activo"}
                   </span>
-                </div>
-
-                <div className="metaItem">
-                  <strong>Subido por</strong>
-                  <span>{uploadedByName}</span>
                 </div>
 
                 <div className="metaItem">

@@ -10,7 +10,11 @@ import {
 export default function Sidebar() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
-  const { books } = useAppData();
+  const { books, loadBooks } = useAppData();
+
+  useEffect(() => {
+    if (currentUser?.id) loadBooks();
+  }, [currentUser?.id]);
 
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);

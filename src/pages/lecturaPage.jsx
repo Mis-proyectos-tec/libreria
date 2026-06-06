@@ -22,7 +22,9 @@ export default function LecturaPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
-  const { books, loading, error } = useAppData();
+  const { books, loading, error, loadBooks } = useAppData();
+
+  useEffect(() => { loadBooks(); }, []);
   const { readingProgress, reloadProgress } = useReadingProgress();
 
   const libroId = location.state?.libroId;

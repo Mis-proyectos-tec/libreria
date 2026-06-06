@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteBook } from "../services/booksService.js";
 import { useAuth } from "../context/authContext.jsx";
@@ -10,7 +10,9 @@ import Spinner from "../components/Spinner.jsx";
 export default function AdminLibrosPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, categories, loading, error, reloadAppData } = useAppData();
+  const { books, categories, loading, error, loadBooks, loadCategories, reloadBooks } = useAppData();
+
+  useEffect(() => { loadBooks(); loadCategories(); }, []);
   const { readingProgress } = useReadingProgress();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,7 +43,7 @@ export default function AdminLibrosPage() {
     if (!confirmDelete) return;
     try {
       await deleteBook(id);
-      await reloadAppData();
+      await reloadBooks();
     } catch (err) {
       console.error(err);
       alert("No se pudo eliminar el libro.");

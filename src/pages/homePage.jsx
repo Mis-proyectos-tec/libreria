@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BookCard from "../components/bookCard.jsx";
 import StatCard from "../components/StatCard.jsx";
@@ -13,7 +13,9 @@ import { getBookCoverUrl } from "../services/booksService.js";
 export default function HomePage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, loading, error } = useAppData();
+  const { books, loading, error, loadBooks } = useAppData();
+
+  useEffect(() => { loadBooks(); }, []);
   const { favorites } = useFavorites();
   const { readingProgress } = useReadingProgress();
   const [coverUrls, setCoverUrls] = useState({});
@@ -70,7 +72,7 @@ export default function HomePage() {
     setCoverUrls(covers);
   }
 
-  useMemo(() => {
+  useEffect(() => {
     if (continueReadingBooks.length > 0 || misBibliotecaLibros.length > 0) {
       loadCoverUrls();
     }

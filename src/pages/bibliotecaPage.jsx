@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BookCard from "../components/bookCard.jsx";
 import EmptyState from "../components/EmptyState.jsx";
@@ -11,7 +11,9 @@ import { deleteFavorite, getBookCoverUrl } from "../services/booksService.js";
 export default function BibliotecaPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, categories, loading, error } = useAppData();
+  const { books, categories, loading, error, loadBooks, loadCategories } = useAppData();
+
+  useEffect(() => { loadBooks(); loadCategories(); }, []);
   const { favorites, reloadFavorites } = useFavorites();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -96,7 +98,7 @@ export default function BibliotecaPage() {
     setCoverUrls(covers);
   }
 
-  useMemo(() => {
+  useEffect(() => {
     if (misLibros.length > 0 || guardados.length > 0) {
       loadCoverUrls();
     }

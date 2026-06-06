@@ -11,7 +11,9 @@ import CoverImage from "../components/CoverImage.jsx";
 export default function ExplorarLibrosPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { books, users, loading, error } = useAppData();
+  const { books, loading, error, loadBooks } = useAppData();
+
+  useEffect(() => { loadBooks(); }, []);
   const { favorites, reloadFavorites } = useFavorites();
 
   const [coverUrls, setCoverUrls] = useState({});
@@ -59,14 +61,6 @@ export default function ExplorarLibrosPage() {
     }
     if (librosPublicos.length > 0) loadCoverUrls();
   }, [librosPublicos]);
-
-  function getUploaderName(book) {
-    const userId = book.userId || book.user_id;
-    if (!userId || !users) return "Usuario desconocido";
-    const user = users.find((item) => String(item.id) === String(userId));
-    if (!user) return "Usuario desconocido";
-    return user.name || user.fullName || user.username || "Usuario";
-  }
 
   function getCoverImage(book) {
     return coverUrls[book.id] || book.coverUrl || "/assets/defaultBook.png";
@@ -178,18 +172,6 @@ export default function ExplorarLibrosPage() {
                   {book.description && (
                     <p className="explorCardDescription">{book.description}</p>
                   )}
-                  <p className="explorCardUploader">
-                    Subido por{" "}
-                    <button
-                      className="explorCardUploaderLink"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate("/perfil-usuario", { state: { usuarioId: book.userId || book.user_id } });
-                      }}
-                    >
-                      <strong>{getUploaderName(book)}</strong>
-                    </button>
-                  </p>
                   {isEnBiblioteca(book.id) && (
                     <span className="explorCardBadge">✓ En tu biblioteca</span>
                   )}

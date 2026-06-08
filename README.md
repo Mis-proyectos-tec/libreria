@@ -79,23 +79,21 @@ El sistema utiliza una arquitectura basada en servicios en la nube:
 
 ## Enlaces
 
+
 Aplicación web desplegada:
 
-```text
+
 https://brave-sea-03b672010.2.azurestaticapps.net
-```
 
 Repositorio de aplicación móvil:
 
-```text
+
 https://github.com/Viktor1712/DesignReadAppProject
-```
+
 
 Video explicativo segunda entrega
 
-```text
 https://youtu.be/lmIcSU_Zdok
-```
 
 ## Seguridad
 

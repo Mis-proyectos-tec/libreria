@@ -2247,8 +2247,8 @@ body.darkMode .likeButtonActive {
   padding: 7px 14px;
   border: 1.5px solid var(--border);
   border-radius: 8px;
-  background: var(--card-bg);
-  color: var(--text);
+  background: var(--accent-dark);
+  color: #FDFAF5;
   font-size: 0.88rem;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -2256,9 +2256,9 @@ body.darkMode .likeButtonActive {
 }
 
 .paginationBtn:hover:not(:disabled) {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #FDFAF5;
 }
 
 .paginationBtn:disabled {
@@ -2267,31 +2267,31 @@ body.darkMode .likeButtonActive {
 }
 
 .paginationBtnActive {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  color: #FDFAF5;
   font-weight: 600;
 }
 
 .paginationBtnActive:hover {
-  background: var(--accent);
-  color: #fff;
+  background: var(--primary-hover);
+  color: #FDFAF5;
 }
 
 body.darkMode .paginationBtn {
-  background: #2a2035;
-  border-color: #4a3f5c;
-  color: var(--text);
+  background: #FFF3CD;
+  border-color: #FFF3CD;
+  color: #333;
 }
 
 body.darkMode .paginationBtn:hover:not(:disabled) {
-  background: #3d2f52;
-  border-color: var(--accent);
-  color: var(--accent);
+  background: #000;
+  border-color: #000;
+  color: #FFF3CD;
 }
 
 body.darkMode .paginationBtnActive {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: #FFF3CD;
+  border-color: #FFF3CD;
+  color: #000;
 }

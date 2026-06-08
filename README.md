@@ -1,165 +1,137 @@
 # ReadFlow Web
 
-Aplicación web del ecosistema **ReadFlow**, diseñada para ofrecer una experiencia de lectura digital conectada con la API en Azure y la aplicación móvil.  
-Este proyecto permite acceder a la biblioteca digital desde la web y forma parte de una solución que busca sincronizar la experiencia de lectura entre distintas plataformas.
+Aplicación web del ecosistema **ReadFlow**, desarrollada con **React + Vite** y desplegada en **Azure Static Web Apps**.
+El sistema permite gestionar una biblioteca digital, visualizar libros en PDF, consultar portadas almacenadas en Azure Blob Storage y utilizar notificaciones en tiempo real mediante Azure SignalR.
 
-## Descripción del proyecto
+## Descripción
 
-ReadFlow Web es la versión web de una plataforma de lectura de libros digitales en formato PDF.  
-Su propósito es brindar una interfaz accesible y moderna para visualizar libros, organizar el contenido y mantener una integración con los demás componentes del proyecto.
+ReadFlow Web es una plataforma de lectura digital orientada a la administración y consulta de libros en línea.
+La aplicación se conecta con servicios en Azure mediante Azure API Management, permitiendo centralizar las solicitudes hacia microservicios, base de datos, almacenamiento de archivos y notificaciones.
 
-Este sistema forma parte de un ecosistema compuesto por:
+## Alcance de la segunda entrega
 
-- Aplicación web
-- Aplicación móvil
-- API desplegada en Azure
+En esta segunda entrega se implementa una versión funcional de la aplicación web conectada con servicios en la nube de Azure. El sistema ya no se limita únicamente a mostrar una interfaz, sino que integra almacenamiento, base de datos, API Gateway, microservicios y comunicación en tiempo real.
 
-## Características principales
+Las principales implementaciones de esta entrega son:
 
-- Visualización de libros digitales desde una interfaz web.
-- Organización de contenido por categorías.
-- Integración con servicios en la nube.
-- Experiencia conectada con el ecosistema ReadFlow.
-- Despliegue automatizado mediante GitHub Actions y Azure Static Web Apps.
+* Conexión del frontend web con Azure API Management.
+* Integración con Azure Functions para la gestión principal de libros, usuarios, favoritos y progreso de lectura.
+* Uso de Azure SQL Database como base de datos principal del sistema.
+* Almacenamiento de archivos PDF y portadas mediante Azure Blob Storage.
+* Visualización de libros, portadas y documentos PDF desde la aplicación web.
+* Registro, edición y eliminación de libros con control por usuario propietario.
+* Implementación de favoritos y progreso de lectura.
+* Implementación de un microservicio independiente de notificaciones en Azure App Service.
+* Registro de likes por libro mediante las tablas `BookLikes` y `Notifications`.
+* Envío de notificaciones en tiempo real utilizando Azure SignalR Service.
+* Configuración de seguridad mediante HTTPS, CORS, Subscription Key, certificados y variables de entorno.
+* Despliegue de la aplicación web en Azure Static Web Apps.
+
+Esta entrega representa la integración de los principales componentes del ecosistema ReadFlow, permitiendo que la aplicación web interactúe con servicios reales en la nube y soporte funcionalidades dinámicas como lectura de libros, gestión de contenido y notificaciones en tiempo real.
+
+## Funcionalidades principales
+
+* Registro e inicio de sesión de usuarios.
+* Visualización de libros disponibles.
+* Consulta del detalle de cada libro.
+* Lectura de archivos PDF desde Azure Blob Storage.
+* Visualización de portadas almacenadas en Blob Storage.
+* Registro, edición y eliminación de libros.
+* Control de libros por usuario propietario.
+* Gestión de favoritos.
+* Registro de progreso de lectura.
+* Sistema de likes por libro.
+* Notificaciones en tiempo real cuando un usuario da like a un libro.
+* Integración con Azure API Management.
+* Despliegue automatizado con GitHub Actions y Azure Static Web Apps.
+
+## Arquitectura general
+
+El sistema utiliza una arquitectura basada en servicios en la nube:
+
+* **Frontend:** React + Vite en Azure Static Web Apps.
+* **API Gateway:** Azure API Management.
+* **Microservicio principal:** Azure Functions para gestión de libros, usuarios, favoritos y progreso de lectura.
+* **Microservicio de notificaciones:** Azure App Service con Node.js + Express.
+* **Base de datos:** Azure SQL Database.
+* **Almacenamiento:** Azure Blob Storage para PDFs y portadas.
+* **Tiempo real:** Azure SignalR Service.
+* **Seguridad:** Subscription Key, CORS, certificados y variables de entorno.
 
 ## Tecnologías utilizadas
 
-- Vite
-- JavaScript
-- HTML5
-- CSS3
-- Azure Static Web Apps
-- GitHub Actions
+* React
+* Vite
+* JavaScript
+* HTML5
+* CSS3
+* Node.js
+* Express.js
+* Azure Static Web Apps
+* Azure API Management
+* Azure Functions
+* Azure App Service
+* Azure SQL Database
+* Azure Blob Storage
+* Azure SignalR Service
+* GitHub Actions
 
-## Requisitos previos
 
-Antes de ejecutar el proyecto de manera local, asegúrate de tener instalado:
+## Enlaces
 
-- Node.js
-- npm
-- Git
+Aplicación web desplegada:
 
-## Instalación y ejecución local
-
-### 1. Clonar el repositorio
-
-    git clone https://github.com/IsmaTEC24/libreria
-
-### 2. Ingresar a la carpeta del proyecto
-
-    cd libreria
-
-### 3. Instalar dependencias
-
-    npm install
-
-### 4. Ejecutar la aplicación en modo desarrollo
-
-    npm run dev
-
-### 5. Abrir en el navegador
-
-Normalmente la aplicación estará disponible en:
-
-    http://localhost:5173
-
-## Scripts disponibles
-
-### Ejecutar en desarrollo
-
-    npm run dev
-
-### Generar build de producción
-
-    npm run build
-
-### Previsualizar build de producción
-
-    npm run preview
-
-## Build de producción
-
-Para generar la versión lista para despliegue, ejecuta:
-
-    npm run build
-
-Esto creará la carpeta:
-
-    dist
-
-En dicha carpeta se almacenan los archivos finales de la aplicación listos para producción.
-
-Para revisar localmente la versión compilada, ejecuta:
-
-    npm run preview
-
-## Despliegue en Azure Static Web Apps
-
-La aplicación está conectada a **Azure Static Web Apps** mediante **GitHub Actions**, por lo que cada cambio enviado al repositorio puede desplegarse automáticamente.
-
-### Pasos para desplegar una nueva versión
-
-1. Realizar los cambios necesarios en el proyecto.
-2. Guardar los archivos modificados.
-3. Agregar los cambios al control de versiones:
-
-    git add .
-
-4. Crear un commit con un mensaje descriptivo:
-
-    git commit -m "Actualizacion de la aplicacion web"
-
-5. Subir los cambios al repositorio remoto:
-
-    git push origin main
-
-> Si la rama principal de despliegue no es `main`, reemplázala por la rama correspondiente.
-
-Después del `push`, GitHub Actions ejecutará automáticamente el proceso de compilación y despliegue.
-
-## Verificación del despliegue
-
-Después de subir cambios al repositorio, se recomienda:
-
-1. Ingresar al repositorio en GitHub.
-2. Abrir la pestaña **Actions**.
-3. Verificar que el workflow haya finalizado correctamente.
-4. Ingresar al enlace público de la aplicación y comprobar que los cambios ya estén visibles.
-
-## Enlaces del proyecto
-
-### Aplicación web desplegada
-
+```text
 https://brave-sea-03b672010.2.azurestaticapps.net
+```
 
-### Repositorio de la aplicación móvil
+Repositorio de aplicación móvil:
 
+```text
 https://github.com/Viktor1712/DesignReadAppProject
+```
 
-## Estructura general del proyecto
 
-La aplicación sigue una estructura orientada al desarrollo frontend con Vite.  
-Durante el proceso de compilación, los archivos finales se generan en la carpeta:
+## Seguridad
 
-    dist
+El sistema utiliza diferentes mecanismos de seguridad:
 
-## Consideraciones importantes
+* Uso de HTTPS.
+* Subscription Key para consumir APIs desde API Management.
+* CORS configurado para permitir solo orígenes autorizados.
+* Variables de entorno para evitar exponer configuraciones sensibles.
+* Certificados para conexiones seguras entre servicios.
+* Validación del usuario propietario antes de editar o eliminar libros.
 
-- La aplicación utiliza **Vite**, por lo que el build se genera en la carpeta `dist`.
-- El despliegue depende de la configuración del workflow de **GitHub Actions**.
-- Si se modifican rutas internas de la aplicación, se debe revisar correctamente la configuración de `staticwebapp.config.json` para evitar errores 404 al recargar páginas.
-- Las variables sensibles o configuraciones privadas no deben subirse directamente al repositorio.
-- Se recomienda mantener una estructura clara de commits para facilitar el seguimiento del proyecto.
+## Servicio de notificaciones
 
-## Relación con el ecosistema ReadFlow
+El sistema de notificaciones funciona mediante un microservicio en Azure App Service.
 
-Este proyecto web complementa la aplicación móvil y la API en Azure, permitiendo que la solución funcione como un ecosistema unificado de lectura digital.  
-La intención del proyecto es ofrecer una experiencia consistente entre plataformas y centralizar el acceso a la biblioteca digital.
+Endpoints principales:
 
-## Estado del proyecto
+```text
+POST /notifications/negotiate
+GET  /books/{id}/like-status
+POST /books/{id}/like
+```
 
-Proyecto académico en desarrollo.
+Flujo de notificación:
 
-## Autores
+1. Un usuario entra al detalle de un libro.
+2. El frontend consulta si el usuario ya dio like.
+3. El usuario da o quita like.
+4. El microservicio registra el cambio en Azure SQL.
+5. Si corresponde, se crea una notificación.
+6. Azure SignalR envía la notificación en tiempo real al dueño del libro.
 
-Desarrollado como parte del proyecto **ReadFlow**.
+## Base de datos
+
+La base de datos se encuentra en Azure SQL Database.
+Tablas principales utilizadas:
+
+* `Books`
+* `Users`
+* `Favorites`
+* `ReadingProgress`
+* `BookLikes`
+* `Notifications`        

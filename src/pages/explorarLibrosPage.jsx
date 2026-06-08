@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext.jsx";
 import { useBooks } from "../hooks/useBooks.js";
+import { useCategories } from "../hooks/useCategories.js";
 import { useFavorites } from "../hooks/useFavorites.js";
 import { createFavorite, deleteFavorite, getBookCoverUrl } from "../services/booksService.js";
 import EmptyState from "../components/EmptyState.jsx";
@@ -15,10 +16,13 @@ export default function ExplorarLibrosPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { books, loading, error } = useBooks();
+  const { categories } = useCategories();
   const { favorites, reloadFavorites } = useFavorites();
 
   const [coverUrls, setCoverUrls] = useState({});
   const [loadingBib, setLoadingBib] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [pageMios, setPageMios] = useState(1);
   const [pageComunidad, setPageComunidad] = useState(1);
 
@@ -34,13 +38,32 @@ export default function ExplorarLibrosPage() {
     return favorites.filter((f) => String(f.userId) === String(currentUser?.id));
   }, [favorites, currentUser?.id]);
 
+  const applyFilters = (list) =>
+    list.filter((b) => {
+      const matchesSearch =
+        (b.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (b.author || "").toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "all" || b.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+
   const librosDeOtros = useMemo(() => {
-    return librosPublicos.filter((b) => String(b.userId) !== String(currentUser?.id));
-  }, [librosPublicos, currentUser?.id]);
+    return applyFilters(
+      librosPublicos.filter((b) => String(b.userId) !== String(currentUser?.id))
+    );
+  }, [librosPublicos, currentUser?.id, searchTerm, selectedCategory]);
 
   const misPublicaciones = useMemo(() => {
-    return librosPublicos.filter((b) => String(b.userId) === String(currentUser?.id));
-  }, [librosPublicos, currentUser?.id]);
+    return applyFilters(
+      librosPublicos.filter((b) => String(b.userId) === String(currentUser?.id))
+    );
+  }, [librosPublicos, currentUser?.id, searchTerm, selectedCategory]);
+
+  useEffect(() => {
+    setPageMios(1);
+    setPageComunidad(1);
+  }, [searchTerm, selectedCategory]);
 
   const isEnBiblioteca = (bookId) => {
     return misRegistrosFavoritos.some((f) => String(f.bookId) === String(bookId));
@@ -93,18 +116,30 @@ export default function ExplorarLibrosPage() {
   return (
     <section className="explorarPage">
 
-      <div className="heroSection">
-        <div className="heroContent">
-          <span className="heroBadge">Biblioteca pública</span>
-          <h1 className="heroTitle">Explorar libros</h1>
-          <p className="heroText">
-            Descubre los libros que otros usuarios han compartido en la plataforma.
-          </p>
+      <div className="bibliotecaToolbar" style={{ marginBottom: "48px" }}>
+        <input
+          type="text"
+          className="searchInput"
+          placeholder="Buscar por título o autor..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <div className="filterPills">
+          <select
+            className="filterPillSelect"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="all">Todas las categorías</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.name}>{category.name}</option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* Sección: Subidos por mí */}
-      {misPublicaciones.length > 0 && (
+      {librosPublicos.some((b) => String(b.userId) === String(currentUser?.id)) && (
         <div className="sectionBlock">
           <div className="sectionHeader">
             <h2>Subidos por mí</h2>
@@ -113,7 +148,9 @@ export default function ExplorarLibrosPage() {
             </span>
           </div>
 
-          {loading ? <Spinner inline /> : (
+          {loading ? <Spinner inline /> : misPublicaciones.length === 0 ? (
+            <EmptyState icon="📚" title="Sin resultados" text="Ningún libro tuyo coincide con la búsqueda." />
+          ) : (
             <>
               <div className="booksGrid">
                 {misPublicaciones.slice((pageMios - 1) * PAGE_SIZE, pageMios * PAGE_SIZE).map((book) => (
@@ -162,8 +199,8 @@ export default function ExplorarLibrosPage() {
         {loading ? <Spinner inline /> : librosDeOtros.length === 0 ? (
           <EmptyState
             icon="◎"
-            title="Sin libros de la comunidad"
-            text="Todavía no hay libros públicos de otros usuarios."
+            title={searchTerm || selectedCategory !== "all" ? "Sin resultados" : "Sin libros de la comunidad"}
+            text={searchTerm || selectedCategory !== "all" ? "Ningún libro coincide con la búsqueda." : "Todavía no hay libros públicos de otros usuarios."}
           />
         ) : (
           <>

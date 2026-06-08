@@ -91,6 +91,11 @@ Repositorio de aplicación móvil:
 https://github.com/Viktor1712/DesignReadAppProject
 ```
 
+Video explicativo segunda entrega
+
+```text
+https://youtu.be/lmIcSU_Zdok
+```
 
 ## Seguridad
 

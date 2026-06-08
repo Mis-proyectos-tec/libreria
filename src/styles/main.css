@@ -12,6 +12,7 @@
   --primary-hover:  #5E5040;
   --primary-light:  #EDE8DC;
   --accent:         #7C6A52;
+  --accent-light:   #a79787;
   --accent-dark:    #3D2B1F;
   --secondary:      #EDE8DC;
   --secondary-hover:#D9CFC0;
@@ -405,7 +406,7 @@ h1, h2, h3 {
 }
 
 .linkButton:hover {
-  color: var(--accent-dark);
+  color: var(--accent-light);
 }
 
 button:disabled {
@@ -1527,6 +1528,14 @@ body.darkMode .filterPillSelect:focus {
 
 body.darkMode .sidebarLogo {
   color: var(--text);
+}
+
+body.darkMode .authDecorTitle {
+  color: var(--text);
+}
+
+body.darkMode .authDecorSub {
+  color: var(--text-soft);
 }
 
 body.darkMode .sidebarTagline {
